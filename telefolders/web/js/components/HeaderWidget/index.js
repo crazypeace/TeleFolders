@@ -1,14 +1,15 @@
+import i18n from "../../i18n.js";
 import Login from "../LoginWidget/index.js";
 import Table from "../TableWidget/index.js";
 
 /**
-  @class Header
-  @classdesc класс, реализующий работу с header`ом
+ * @class Header
+ * @classdesc Handles header interactions
  */
 export default class Header {
   /**
    * @constructor
-   * @param {Object} data данные об пользователе
+   * @param {Object} data user data
    */
   constructor(data) {
     this.data = data;
@@ -16,11 +17,15 @@ export default class Header {
     this.userMenuElement = document.querySelector(".user-menu");
     this.init();
     this.table = new Table();
+
+    document.addEventListener("locale-changed", () => {
+      this.applyTranslations();
+    });
   }
 
   /**
    * @method init
-   * @description метод, создающий слушатели для heder`а
+   * @description Initialize header listeners
    */
   init = () => {
     this.avatarContainerElement.addEventListener(
@@ -28,13 +33,75 @@ export default class Header {
       this.handleAvatarClick,
     );
     window.addEventListener("click", this.handleWindowClick);
+
+    // Initialize language switcher text
+    this.updateLangSwitch();
+
+    // Language switcher click
+    const langSwitch = document.getElementById("langSwitch");
+    if (langSwitch) {
+      langSwitch.addEventListener("click", this.handleLangSwitch);
+    }
+
+    // Apply initial translations to static elements
+    this.applyTranslations();
   };
 
+  /**
+   * @method applyTranslations
+   * @description Update all translated text in the header
+   */
+  applyTranslations() {
+    const hideArchived = document.getElementById("hideArchived");
+    if (hideArchived) {
+      const isHidden =
+        localStorage.getItem("archiveState") === "false";
+      hideArchived.textContent = isHidden
+        ? i18n.t("header.show_archived")
+        : i18n.t("header.hide_archived");
+    }
+
+    const reloadChatsList = document.getElementById("reloadChatsList");
+    if (reloadChatsList) {
+      reloadChatsList.textContent = i18n.t("header.reload");
+    }
+
+    const logout = this.userMenuElement.querySelector(".logout");
+    if (logout) {
+      logout.textContent = i18n.t("header.logout");
+    }
+
+    this.updateLangSwitch();
+  }
+
+  /**
+   * @method updateLangSwitch
+   * @description Update language switcher text
+   */
+  updateLangSwitch() {
+    const langSwitch = document.getElementById("langSwitch");
+    if (langSwitch) {
+      langSwitch.textContent =
+        i18n.locale === "ru" ? "English" : "Русский";
+    }
+  }
+
+  /**
+   * @method handleLangSwitch
+   * @description Switch language
+   */
+  handleLangSwitch = async (event) => {
+    event.stopPropagation();
+    const newLocale = i18n.locale === "ru" ? "en" : "ru";
+    await i18n.setLocale(newLocale);
+    // Refresh table data to re-render with new language
+    this.table.drawChats();
+  };
 
   /**
    * @method changeAvatar
-   * @description метод, меняющий аватар
-   * @param {String} picture 
+   * @description Change avatar image
+   * @param {String} picture
    */
   changeAvatar = (picture) => {
     this.avatarContainerElement.querySelector(".header .avatar img").src =
@@ -43,18 +110,20 @@ export default class Header {
 
   /**
    * @method handleAvatarClick
-   * @description метод, делегирующий события
-   * @param {Event} event объект события javascript
+   * @description Delegate avatar menu events
+   * @param {Event} event
    */
   handleAvatarClick = (event) => {
     event.stopPropagation();
 
     if (JSON.parse(localStorage.getItem("archiveState"))) {
       const element = this.userMenuElement.querySelector(".hideArchived");
-      element.textContent = "Скрыть архивные";
-    } else if (JSON.parse(localStorage.getItem("archiveState")) === "false") {
+      element.textContent = i18n.t("header.hide_archived");
+    } else if (
+      JSON.parse(localStorage.getItem("archiveState")) === "false"
+    ) {
       const element = this.userMenuElement.querySelector(".hideArchived");
-      element.textContent = "Показать архивные";
+      element.textContent = i18n.t("header.show_archived");
     }
 
     if (this.userMenuElement.className === "user-menu") {
@@ -78,8 +147,8 @@ export default class Header {
 
   /**
    * @method handleWindowClick
-   * @description метод, отслеживающий клики вне "userMenuElement"
-   * @param {Event} event объект события javascript
+   * @description Close menu on outside click
+   * @param {Event} event
    */
   handleWindowClick = (event) => {
     if (
@@ -94,23 +163,23 @@ export default class Header {
 
   /**
    * @method changeText
-   * @description метод, меняющий текст, сигнализирующий о том показываются ли сейчас архивные чаты
+   * @description Toggle archive visibility text
    */
   changeText() {
     const element = this.userMenuElement.querySelector(".hideArchived");
 
     if (localStorage.getItem("archiveState") === "true") {
       this.table.hideArchive();
-      element.textContent = "Показать архивные";
+      element.textContent = i18n.t("header.show_archived");
     } else if (localStorage.getItem("archiveState") === "false") {
       this.table.showArchive();
-      element.textContent = "Скрыть архивные";
+      element.textContent = i18n.t("header.hide_archived");
     }
   }
 
   /**
    * @method reloadChats
-   * @description метод, который выполняет побновление списка чатов
+   * @description Reload chat list
    */
   reloadChats = () => {
     this.table.updateChats();
@@ -119,13 +188,13 @@ export default class Header {
 
   /**
    * @method logout
-   * @description метод, который выполняет выход из аккаунта
+   * @description Log out
    */
   logout = () => {
     eel.logout()();
     document.querySelector(".spinner_large").classList.add("hide");
     document.querySelector(".table-container.main-table").classList.add("hide");
-    const login = new Login()
-    login.init()
+    const login = new Login();
+    login.init();
   };
 }

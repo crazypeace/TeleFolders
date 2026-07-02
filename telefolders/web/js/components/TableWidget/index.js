@@ -1,14 +1,15 @@
+import i18n from "../../i18n.js";
 import Popup from "../PopupWidget/index.js";
 import FloatView from "../FloatViewWidget/index.js";
 
 /**
  * @class Table
- * @classdesc класс, реализующий работу с главной таблицей
+ * @classdesc Main table widget for chats and folders
  */
 export default class Table {
   /**
    * @constructor
-   * @returns {Table.instance} возвращает singleton
+   * @returns {Table.instance} singleton
    */
   constructor() {
     if (
@@ -29,7 +30,7 @@ export default class Table {
 
   /**
    * @method getData
-   * @description метод, который получает данные
+   * @description Fetch chats and folders data
    */
   getData = async () => {
     document.querySelector(".table-container.main-table").classList.add("hide");
@@ -49,7 +50,7 @@ export default class Table {
 
   /**
    * @method getChats
-   * @description метод, который получает чаты
+   * @description Fetch chats
    */
   getChats = async () => {
     return await eel.get_all_chats()();
@@ -57,7 +58,7 @@ export default class Table {
 
   /**
    * @method getFolders
-   * @description метод, который получает папки
+   * @description Fetch folders
    */
   getFolders = async () => {
     return await eel.get_folders()();
@@ -65,7 +66,7 @@ export default class Table {
 
   /**
    * @method drawHeader
-   * @description метод, который рисует header таблицы
+   * @description Draw table header
    */
   async drawHeader() {
     document
@@ -74,7 +75,7 @@ export default class Table {
     document.querySelector(".spinner_large").classList.add("hide");
 
     const trElement = document.querySelector(
-      ".table-container .table thead tr"
+      ".table-container .table thead tr",
     );
     trElement.textContent = "";
     const folders = this.folders;
@@ -82,12 +83,12 @@ export default class Table {
     let tableHead = "";
 
     tableHead += /* html */ `
-      <th class="th">Все чаты</th>
+      <th class="th">${i18n.t("table.all_chats")}</th>
     `;
 
     tableHead += /* html */ `
         <th>
-          <span>Архив</span>
+          <span>${i18n.t("table.archive")}</span>
         </th>
       `;
 
@@ -109,19 +110,18 @@ export default class Table {
   }
 
   /**
-   * TODO
    * @method handleAddFolder
-   * @description метод, который создает popup для получания названия папки
+   * @description Show popup to add a new folder
    */
   handleAddFolder = () => {
     const popupComponent = new Popup(`
       <div class='popup-content'>
-        <h2>Добавление папки</h2>
-        <label for='folder-name'>Введите название папки</label>
+        <h2>${i18n.t("popup.add_folder")}</h2>
+        <label for='folder-name'>${i18n.t("popup.folder_name_label")}</label>
         <input id='folder-name' type='text' />
         <div class='buttons'>
-          <button id='popup-done'>Добавить</button>
-          <button id='popup-cancle'>Отменить</button>
+          <button id='popup-done'>${i18n.t("popup.add")}</button>
+          <button id='popup-cancle'>${i18n.t("popup.cancel")}</button>
         </div>
       </div>
     `);
@@ -154,19 +154,19 @@ export default class Table {
 
   /**
    * @method drawChats
-   * @description метод, который рисует таблицу
+   * @description Draw chat table
    */
   async drawChats() {
     const chats = this.chats;
     const folders = this.folders;
     const tbodyElement = document.querySelector(
-      ".table-container .table tbody"
+      ".table-container .table tbody",
     );
     tbodyElement.textContent = "";
 
     let html = "";
 
-    // отрисовка td с названием чата
+    // Draw chat name td
     if (folders.length === 0) {
       chats.map((value) => {
         html += /* html */ `
@@ -178,20 +178,20 @@ export default class Table {
 
     function setName(value) {
       const flags = {
-        contacts: "Контакты",
-        non_contacts: "Не контакты",
-        groups: "Группы",
-        broadcasts: "Каналы",
-        bots: "Боты",
-        exclude_muted: "Без уведомлений",
-        exclude_read: "Прочитанные",
-        exclude_archived: "Архивированные",
+        contacts: i18n.t("table.flag.contacts"),
+        non_contacts: i18n.t("table.flag.non_contacts"),
+        groups: i18n.t("table.flag.groups"),
+        broadcasts: i18n.t("table.flag.broadcasts"),
+        bots: i18n.t("table.flag.bots"),
+        exclude_muted: i18n.t("table.flag.exclude_muted"),
+        exclude_read: i18n.t("table.flag.exclude_read"),
+        exclude_archived: i18n.t("table.flag.exclude_archived"),
       };
 
       return flags[value];
     }
 
-    // отрисовка строки флага с кнопкой
+    // Draw flag rows
     Object.keys(folders[0].flags).map((value) => {
       html += /* html */ `
           <tr>
@@ -208,7 +208,7 @@ export default class Table {
                   >
                     <div class='buttons flag'>${this.setFlugsButton(
                       folder,
-                      value
+                      value,
                     )}</div>
                   </td>
                 `;
@@ -218,7 +218,7 @@ export default class Table {
     `;
     });
 
-    // отрисовка строки чата с кнопками
+    // Draw chat rows
     chats.map((value, index) => {
       const id = Number(localStorage.getItem("user-id"));
       const archiveState =
@@ -243,16 +243,8 @@ export default class Table {
                   >
                     <div class='wrapper'>
                       <p class="title">
-                        <!-- <a -->
-                          <!-- href="https://t.me/c/${value.peer_id}" -->
-                          <!-- target="_blank" -->
-                        <!-- > -->
-                          ${id === value.chat_id ? "Избранное" : value.title}
-                        <!-- </a> -->
+                        ${id === value.chat_id ? i18n.t("table.favorites") : value.title}
                       </p>
-                      <!-- <button> -->
-                        <!-- <img src="/img/svg/pin-white.svg" /> -->
-                      <!-- </button> -->
                     </div>
                   </th>
                   <td>
@@ -292,16 +284,8 @@ export default class Table {
                 >
                   <div class='wrapper'>
                     <p class="title">
-                      <!-- <a -->
-                        <!-- href="https://t.me/c/${value.peer_id}" -->
-                        <!-- target="_blank" -->
-                      <!-- > -->
-                        ${id === value.chat_id ? "Избранное" : value.title}
-                      <!-- </a> -->
+                      ${id === value.chat_id ? i18n.t("table.favorites") : value.title}
                     </p>
-                    <!-- <button> -->
-                      <!-- <img src="/img/svg/pin-white.svg" /> -->
-                    <!-- </button> -->
                   </div>
                 </th>
                 <td>
@@ -338,8 +322,8 @@ export default class Table {
 
   /**
    * @method handleClick
-   * @description метод, который делегирует события
-   * @param {Event} event объект события javascript
+   * @description Delegate table click events
+   * @param {Event} event
    */
   handleClick = (event) => {
     if (event.target.className === "button exclude") {
@@ -381,10 +365,10 @@ export default class Table {
 
   /**
    * @method setChatsButtons
-   * @description метод, который возвращает разметку для кнопки (кнопка для чата)
-   * @param {String | Number} folderId id папки
-   * @param {Object} userInfo данные об пользователе
-   * @returns {String} возвращает HTML в виде строки
+   * @description Return button HTML for a chat
+   * @param {String | Number} folderId
+   * @param {Object} userInfo
+   * @returns {String} HTML string
    */
   setChatsButtons(folderId, userInfo) {
     let imagePath = "/img/svg/plus-white.svg";
@@ -417,14 +401,14 @@ export default class Table {
 
   /**
    * @method setFlugsButton
-   * @description метод, который возвращает разметку для кнопки (кнопка для флага)
-   * @param {Object} folder данные об папке
-   * @param {String} folderFlag флаг папки
-   * @returns {String} возвращает HTML в виде строки
+   * @description Return flag button HTML
+   * @param {Object} folder
+   * @param {String} folderFlag
+   * @returns {String} HTML string
    */
   setFlugsButton = (folder, folderFlag) => {
     let html = ["exclude_muted", "exclude_read", "exclude_archived"].includes(
-      folderFlag
+      folderFlag,
     )
       ? /* html */ `
       <button class='button flag'>
@@ -455,12 +439,11 @@ export default class Table {
 
   /**
    * @method setChatRelation
-   * @description метод, который изменяет состояние чата
-   * @param {String} relation состояние чата в папке
-   * @param {Event} event объект события javascript
+   * @description Update chat-folder relation
+   * @param {Event} event
+   * @param {String} relation
    */
   setChatRelation = async (event, relation) => {
-    //add spinner
     event.innerHTML = `
       <div class="spinner">
         <div class="block"></div>
@@ -477,7 +460,7 @@ export default class Table {
     const response = await eel.set_chat_folder_relation(
       Number(chatId),
       Number(folderId),
-      relation
+      relation,
     )();
 
     if (response.success) {
@@ -496,9 +479,8 @@ export default class Table {
         event.classList.remove("include");
         event.classList.add("pinned");
 
-        // Удаляем из include, если есть
         const includeIndex = this.chats[chatIndex].folders.include.indexOf(
-          Number(folderId)
+          Number(folderId),
         );
         if (includeIndex !== -1) {
           this.chats[chatIndex].folders.include.splice(includeIndex, 1);
@@ -512,9 +494,8 @@ export default class Table {
         event.classList.remove("pinned");
         event.classList.add("exclude");
 
-        // Удаляем из pinned, если есть
         const pinnedIndex = this.chats[chatIndex].folders.pinned.indexOf(
-          Number(folderId)
+          Number(folderId),
         );
         if (pinnedIndex !== -1) {
           this.chats[chatIndex].folders.pinned.splice(pinnedIndex, 1);
@@ -529,7 +510,7 @@ export default class Table {
         event.classList.add("null");
 
         const excludeIndex = this.chats[chatIndex].folders.exclude.indexOf(
-          Number(folderId)
+          Number(folderId),
         );
         if (excludeIndex !== -1) {
           this.chats[chatIndex].folders.exclude.splice(excludeIndex, 1);
@@ -543,14 +524,14 @@ export default class Table {
     if (!response.success) {
       const text =
         response.error_code === "folder_empty_error"
-          ? "Папка не может быть пустой"
-          : "Произошла ошибка";
+          ? i18n.t("error.folder_empty")
+          : i18n.t("error.occurred");
       const popupComponent = new Popup(/* html */ `
           <div class='popup-content'>
-            <h2>Произошла ошибка</h2>
+            <h2>${i18n.t("error.occurred")}</h2>
             <p>${text}</p>
             <div class='buttons'>
-              <button id='popup-done'>OK</button>
+              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
             </div>
           </div>
         `);
@@ -569,12 +550,10 @@ export default class Table {
 
   /**
    * @method setFlagRelation
-   * @description метод, который добавляет или убирает флаги у папки
-   * @param {Event} event объект события javascript
+   * @description Toggle folder flag
+   * @param {Event} event
    */
   setFlagRelation = async (event) => {
-    console.log(event);
-    //add spinner
     event.innerHTML = `
     <div class="buttons flug">
       <div class="spinner">
@@ -582,7 +561,6 @@ export default class Table {
       </div>
     </div>
     `;
-    console.log(event);
 
     let folderId = event.getAttribute("data-folder-id");
     let flag = event.getAttribute("data-flag");
@@ -636,40 +614,17 @@ export default class Table {
       }
     }
 
-    const text =
-        response.error_code === "folder_empty_error"
-          ? "Папка не может быть пустой"
-          : "Произошла ошибка";
-      const popupComponent = new Popup(/* html */ `
-          <div class='popup-content'>
-            <h2>Произошла ошибка</h2>
-            <p>${text}</p>
-            <div class='buttons'>
-              <button id='popup-done'>OK</button>
-            </div>
-          </div>
-        `);
-
-      popupComponent.show();
-
-      function addFolderHandler() {
-        popupComponent.close();
-      }
-
-      document
-        .getElementById("popup-done")
-        .addEventListener("click", addFolderHandler, { once: true });
     if (!response.success) {
       const text =
         response.error_code === "folder_empty_error"
-          ? "Папка не может быть пустой"
-          : "Произошла ошибка";
+          ? i18n.t("error.folder_empty")
+          : i18n.t("error.occurred");
       const popupComponent = new Popup(/* html */ `
           <div class='popup-content'>
-            <h2>Произошла ошибка</h2>
+            <h2>${i18n.t("error.occurred")}</h2>
             <p>${text}</p>
             <div class='buttons'>
-              <button id='popup-done'>OK</button>
+              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
             </div>
           </div>
         `);
@@ -688,11 +643,10 @@ export default class Table {
 
   /**
    * @method setArchiveRelation
-   * @description метод, который добавляет или убирает чат из архива
-   * @param {Event} event объект события javascript
+   * @description Toggle chat archive state
+   * @param {Event} event
    */
   setArchiveRelation = async (event) => {
-    //add spinner
     event.innerHTML = `
       <div class="spinner">
         <div class="block"></div>
@@ -737,7 +691,7 @@ export default class Table {
 
   /**
    * @method showArchive
-   * @description метод, который показывает архивные чаты
+   * @description Show archived chats
    */
   showArchive = () => {
     localStorage.setItem("archiveState", true);
@@ -747,7 +701,7 @@ export default class Table {
 
   /**
    * @method hideArchive
-   * @description метод, который скрывает архивные чаты
+   * @description Hide archived chats
    */
   hideArchive = () => {
     localStorage.setItem("archiveState", false);
@@ -756,15 +710,14 @@ export default class Table {
   };
 
   /**
-   * TODO
    * @method addFolder
-   * @description метод, который создает и добавляет новую папку
+   * @description Create and add a new folder (TODO)
    */
   addFolder() {}
 
   /**
    * @method updateChats
-   * @description метод, который обновляет данные об чатах и папках и перерисовывает таблицу
+   * @description Refresh chats and folders data
    */
   async updateChats() {
     this.getData();

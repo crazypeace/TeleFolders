@@ -15,4 +15,14 @@ p.input-error {
   color: red;
 }
 
+.lang-switch {
+  cursor: pointer;
+  color: #0066cc;
+  text-decoration: underline;
+}
+
+.lang-switch:hover {
+  color: #004499;
+}
+
 /*# sourceMappingURL=components.css.map */

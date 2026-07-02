@@ -1,3 +1,4 @@
+import os
 import eel
 
 from .tg import Telefolders
@@ -44,12 +45,18 @@ def get_user():
 
 @eel.expose
 def get_folders():
-    return telefolders.get_folders()
+    import sys
+    result = telefolders.get_folders()
+    print(f"[eel] get_folders returned {len(result)} items", file=sys.stderr, flush=True)
+    return result
 
 
 @eel.expose
 def get_all_chats():
-    return telefolders.get_all_chats()
+    import sys
+    result = telefolders.get_all_chats()
+    print(f"[eel] get_all_chats returned {len(result)} items", file=sys.stderr, flush=True)
+    return result
 
 
 @eel.expose
@@ -65,3 +72,14 @@ def set_chat_folder_relation(chat_id, folder_id, relation=None):
 @eel.expose
 def set_folder_flag(folder_id, flag, value):
     return telefolders.set_folder_flag(folder_id, flag, value)
+
+
+@eel.expose
+def get_language():
+    return os.environ.get("TELEFOLDERS_LANG", "ru")
+
+
+@eel.expose
+def set_language(lang):
+    os.environ["TELEFOLDERS_LANG"] = lang
+    return {"success": True, "lang": lang}

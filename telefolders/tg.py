@@ -7,6 +7,11 @@ from telethon.tl.types import DialogFilter
 
 import os
 
+def _extract_title(title):
+    """Extract plain text from Telethon's TextWithEntities or return string as-is."""
+    if hasattr(title, 'text'):
+        return title.text
+    return str(title) if title else ''
 
 class Telefolders:
     def __init__(self):
@@ -26,7 +31,7 @@ class Telefolders:
                     ),
                     api_id,
                     api_hash,
-                    lang_code="ru",
+                    lang_code=os.environ.get("TELEFOLDERS_LANG", "ru"),
                 )
                 self.client.connect()
 
@@ -102,7 +107,12 @@ class Telefolders:
         )
 
     def get_folders(self):
-        folders = self.client(GetDialogFiltersRequest())
+        try:
+            result = self.client(GetDialogFiltersRequest())
+            folders = result.filters if hasattr(result, 'filters') else result
+        except Exception as e:
+            print(f"[get_folders] ERROR: {e}", flush=True)
+            return []
 
         ans = []
 
@@ -111,7 +121,7 @@ class Telefolders:
                 ans.append(
                     {
                         "folder_id": folder.id,
-                        "folder_title": folder.title,
+                        "folder_title": _extract_title(folder.title),
                         "folder_icon": folder.emoticon,
                         "flags": {
                             "contacts": folder.contacts,
@@ -130,8 +140,14 @@ class Telefolders:
 
     def get_all_chats(self):
         chats_with_folders = {}
+        try:
+            result = self.client(GetDialogFiltersRequest())
+            all_folders = result.filters if hasattr(result, 'filters') else result
+        except Exception as e:
+            print(f"[get_all_chats] ERROR getting filters: {e}", flush=True)
+            all_folders = []
 
-        for folder in self.client(GetDialogFiltersRequest()):
+        for folder in all_folders:
             if type(folder) == DialogFilter:
                 include_chats = folder.include_peers
                 exclude_chats = folder.exclude_peers
@@ -193,21 +209,24 @@ class Telefolders:
 
         ans = []
 
-        for chat in self.client.iter_dialogs():
-            peer_id = chat.entity.id
-            ans.append(
-                {
-                    "chat_id": chat.id,
-                    "peer_id": peer_id,
-                    "pinned": chat.pinned,
-                    # "picture": client.download_profile_photo(chat, file=bytes),
-                    "title": chat.title,
-                    "archived": chat.archived,
-                    "folders": chats_with_folders.get(
-                        peer_id, {"include": [], "exclude": [], "pinned": []}
-                    ),
-                }
-            )
+        try:
+            for chat in self.client.iter_dialogs():
+                peer_id = chat.entity.id
+                ans.append(
+                    {
+                        "chat_id": chat.id,
+                        "peer_id": peer_id,
+                        "pinned": chat.pinned,
+                        # "picture": client.download_profile_photo(chat, file=bytes),
+                        "title": chat.title,
+                        "archived": chat.archived,
+                        "folders": chats_with_folders.get(
+                            peer_id, {"include": [], "exclude": [], "pinned": []}
+                        ),
+                    }
+                )
+        except Exception as e:
+            print(f"[get_all_chats] ERROR iterating dialogs: {e}", flush=True)
         return ans
 
     def set_chat_pin(self, chat_id, pin: bool = True):
@@ -226,7 +245,8 @@ class Telefolders:
             return {"success": True}
 
     def set_chat_folder_relation(self, chat_id, folder_id, relation=None):
-        folders = self.client(GetDialogFiltersRequest())
+        result = self.client(GetDialogFiltersRequest())
+        folders = result.filters if hasattr(result, 'filters') else result
 
         for folder_ in folders:
             if "id" in folder_.__dict__ and folder_.id == folder_id:
@@ -272,7 +292,8 @@ class Telefolders:
         return {"success": True}
 
     def set_folder_flag(self, folder_id, flag, value):
-        folders = self.client(GetDialogFiltersRequest())
+        result = self.client(GetDialogFiltersRequest())
+        folders = result.filters if hasattr(result, 'filters') else result
         print(folder_id, flag, value)
 
         for folder_ in folders:

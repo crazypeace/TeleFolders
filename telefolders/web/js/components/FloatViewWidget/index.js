@@ -1,14 +1,15 @@
+import i18n from "../../i18n.js";
 import Table from "../TableWidget/index.js";
 import Popup from "../PopupWidget/index.js";
 
 /**
  * @class FloatView
- * @classdesc класс, который реализует вид FloatView
+ * @classdesc Floating detail view for a single chat
  */
 class FloatView {
   /**
    * @constructor
-   * @returns {FloatView.instance} возвращает singleton
+   * @returns {FloatView.instance} singleton
    */
   constructor() {
     this.chatIndex;
@@ -36,7 +37,7 @@ class FloatView {
 
   /**
    * @method nextChat
-   * @description метод, который переключает отображения чата на следующий чат
+   * @description Switch to next chat
    */
   nextChat = () => {
     this.container.removeEventListener("click", this.handleClickListener);
@@ -75,7 +76,7 @@ class FloatView {
 
   /**
    * @method prevChat
-   * @description метод, который переключает отображение чата на предыдущий чат
+   * @description Switch to previous chat
    */
   prevChat = () => {
     this.container.removeEventListener("click", this.handleClickListener);
@@ -114,7 +115,7 @@ class FloatView {
 
   /**
    * @method close
-   * @description закрывает FloatView
+   * @description Close FloatView
    */
   close = async () => {
     if (this.counter >= 1) {
@@ -126,10 +127,10 @@ class FloatView {
     this.container.classList.add("float-view-hidden");
     document.removeEventListener("keydown", this.click);
   };
-  
+
   /**
    * @method show
-   * @description показывает FloatView
+   * @description Show FloatView
    */
   show = () => {
     this.container.classList.remove("float-view-hidden");
@@ -140,8 +141,8 @@ class FloatView {
 
   /**
    * @method click
-   * @description метод который проверяет какую кнопку нажали и при сходстве с условием выполняет функции
-   * @param {Event} event объект события javascript
+   * @description Handle keyboard navigation
+   * @param {Event} event
    */
   click = (event) => {
     console.log("123");
@@ -156,9 +157,9 @@ class FloatView {
 
   /**
    * @method handleClick
-   * @description метод, который производит делегирование событий
-   * @param {Event} event объект события javascript
-   * @param {String | Number} chatId 
+   * @description Delegate click events
+   * @param {Event} event
+   * @param {String | Number} chatId
    */
   handleClick = (event, chatId) => {
     if (
@@ -183,12 +184,11 @@ class FloatView {
 
   /**
    * @method setArchive
-   * @description метод, который добавляет чат в архив
-   * @param {Event} event объект события javascript
-   * @param {String | Number} chatId id чата
+   * @description Toggle archive state
+   * @param {Event} event
+   * @param {String | Number} chatId
    */
   setArchive = async (event, chatId) => {
-    //add spinner
     event.innerHTML = `
       <div class="spinner">
         <div class="block"></div>
@@ -211,13 +211,13 @@ class FloatView {
         event.innerHTML = `<img src="${imagePath}" />`;
       }
     } else {
-      const text = "Неисзвестная ошибка";
+      const text = i18n.t("error.unknown");
       const popupComponent = new Popup(/* html */ `
           <div class='popup-content'>
-            <h2>Произошла ошибка</h2>
+            <h2>${i18n.t("error.occurred")}</h2>
             <p>${text}</p>
             <div class='buttons'>
-              <button id='popup-done'>OK</button>
+              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
             </div>
           </div>
         `);
@@ -236,7 +236,7 @@ class FloatView {
 
   /**
    * @method draw
-   * @description метод, который рисует FloatView
+   * @description Render FloatView
    */
   draw = () => {
     const folders = this.table.folders;
@@ -260,13 +260,13 @@ class FloatView {
           <table>
             <thead>
               <tr>
-                <th>Папка</th>
-                <th>Значение</th>
+                <th>${i18n.t("table.folder")}</th>
+                <th>${i18n.t("table.value")}</th>
               <tr>
             </thead>
             <tbody>
               <tr>
-                <th>Архив</th>
+                <th>${i18n.t("table.archive")}</th>
                 <td>
                   <button
                     class='button archive'
@@ -317,10 +317,10 @@ class FloatView {
 
   /**
    * @method setChatsButton
-   * @description метод, который возвращает содержимое кнопки (HTML в виде строки)
-   * @param {String | Number} folderId id папки
-   * @param {Object} userInfo объект с данными о пользователе
-   * @returns {String} строка в виде html
+   * @description Return button HTML for a chat in FloatView
+   * @param {String | Number} folderId
+   * @param {Object} userInfo
+   * @returns {String} HTML string
    */
   setChatsButton(folderId, userInfo) {
     let includePath = "/img/svg/plus-white.svg";
@@ -358,13 +358,12 @@ class FloatView {
 
   /**
    * @method setChatRelation
-   * @description метод, который изменяет состояние чата
-   * @param {Event} event объект события javascript
-   * @param {String} relation состояние чата
-   * @param {String | Number} chatId id чата
+   * @description Update chat-folder relation in FloatView
+   * @param {Event} event
+   * @param {String} relation
+   * @param {String | Number} chatId
    */
   setChatRelation = async (event, relation, chatId) => {
-    //add spinner
     event.innerHTML = `
     <div class="spinner">
       <div class="block"></div>
@@ -422,14 +421,14 @@ class FloatView {
         } else {
           const text =
             response.error_code === "folder_empty_error"
-              ? "Папка не может быть пустой"
-              : "Произошла ошибка";
+              ? i18n.t("error.folder_empty")
+              : i18n.t("error.occurred");
           const popupComponent = new Popup(/* html */ `
           <div class='popup-content'>
-            <h2>Произошла ошибка</h2>
+            <h2>${i18n.t("error.occurred")}</h2>
             <p>${text}</p>
             <div class='buttons'>
-              <button id='popup-done'>OK</button>
+              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
             </div>
           </div>
         `);
@@ -718,14 +717,14 @@ class FloatView {
     if (!response.success) {
       const text =
         response.error_code === "folder_empty_error"
-          ? "Папка не может быть пустой"
-          : "Произошла ошибка";
+          ? i18n.t("error.folder_empty")
+          : i18n.t("error.occurred");
       const popupComponent = new Popup(/* html */ `
           <div class='popup-content'>
-            <h2>Произошла ошибка</h2>
+            <h2>${i18n.t("error.occurred")}</h2>
             <p>${text}</p>
             <div class='buttons'>
-              <button id='popup-done'>OK</button>
+              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
             </div>
           </div>
         `);

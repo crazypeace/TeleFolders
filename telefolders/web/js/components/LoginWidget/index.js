@@ -1,324 +1,285 @@
+import i18n from "../../i18n.js";
 import Popup from "../PopupWidget/index.js";
-import Table from "../TableWidget/index.js";
-import Header from "../HeaderWidget/index.js";
 
 /**
  * @class Login
- * @classdesc класс, который реализует авторизацию пользователя через telegram
+ * @classdesc Handles user authorization via Telegram
  */
 export default class Login {
-  /**
-   * @constructor
-   */
   constructor() {
-    this.phone = "";
-    this.phone_code_hash = "";
-    this.code = "";
-    this.password = "";
-
-    document.querySelector(".spinner_large").classList.add("hide");
-
-    let mainElement = document.querySelector("main");
-    let oldLogin = document.querySelector(".login-wrapper");
-
-    if (oldLogin) {
-      mainElement.removeChild(oldLogin);
-    }
-    mainElement.insertAdjacentHTML(
-      "afterbegin",
-      /* html */ `
-          <div class="login-wrapper">
-            <div class="login">
-              <h3>Вы не авторизованы, войдите в ваш telegram-аккаунт</h3>
-              <p class="login-label">Введите ваш номер телефона:</p>
-              <p class="input-error hide">
-                Неверный номер телефона
-              </p>
-              <div class="login-form">
-                <input type="tel" class="login-input" placeholder="Номер телефона" />
-                <button class="login-button">Войти</button>
-              </div>
-            </div>
-          </div>
-        `
-    );
-
-    this.formElement = document.querySelector(".login .login-form");
-    this.inputLabel = document.querySelector(".login-label");
-    this.inputError = document.querySelector(".input-error");
-    this.loginButton = document.querySelector(".login-button");
-    this.inputElement = document.querySelector(".login-input");
+    this.container = document.querySelector(".login");
+    this.state = "phone";
   }
 
   /**
    * @method init
-   * @description метод, который добавляет слушатели событий на нажатия на клавиатуру и на клики
+   * @description Initialize login widget
    */
-  init = () => {
-    this.loginButton.addEventListener("click", this.loginPhone);
-    document.addEventListener("keydown", this.click);
-  };
+  init() {
+    this.container = document.querySelector(".login");
+
+    if (!this.container) {
+      const mainEl = document.querySelector(".app main.main") || document.querySelector(".app");
+      mainEl.insertAdjacentHTML(
+        "beforeend",
+        `<div class="login"></div>`,
+      );
+      this.container = document.querySelector(".login");
+    }
+
+    this.container.classList.remove("hide");
+    this.render();
+    this.addEventListeners();
+  }
 
   /**
-   * @method click
-   * @description метод, который производит клик по кнопке this.loginButton 
-   * @param {Event} event объект события javascript
+   * @method render
+   * @description Render login form
    */
-  click = (event) => {
-    if (event.code === "Enter") this.loginButton.click();
-  };
-
-  /**
-   * @method loginPhone
-   * @description метод, который обрабатывает данные из поля ввода, проверяет на корректность и при успешно пройденной проверке переходит на другой этап авторизации
-   */
-  loginPhone = async () => {
-    this.lostFocus();
-    this.loginButton.disabled = true;
-    this.loginButton.innerHTML = `
-      <div class="spinner">
-        <div class="block"></div>
+  render() {
+    this.container.innerHTML = /* html */ `
+      <div class="login-container">
+        <div class="login-form">
+          <h3>${i18n.t("login.not_authorized")}</h3>
+          <p class="login-label">${i18n.t("login.phone_label")}</p>
+          <p class="login-error hide">
+            ${i18n.t("login.invalid_phone")}
+          </p>
+          <div class="login-input-container">
+            <input type="tel" class="login-input" placeholder="${i18n.t("login.phone_placeholder")}" />
+            <button class="login-button">${i18n.t("login.submit")}</button>
+          </div>
+        </div>
       </div>
     `;
+  }
 
-    let phone = this.inputElement.value;
+  /**
+   * @method addEventListeners
+   * @description Add keyboard and click listeners
+   */
+  addEventListeners() {
+    this.inputElement = this.container.querySelector(".login-input");
+    this.loginButton = this.container.querySelector(".login-button");
+    this.loginError = this.container.querySelector(".login-error");
+    this.loginLabel = this.container.querySelector(".login-label");
 
-    const response = await eel.login_phone(phone)();
-    console.log(response)
-    // const response = {success: true, phone_code_hash: 123}
+    this.inputElement.addEventListener("keydown", this.handleKeyDown);
+    this.loginButton.addEventListener("click", this.handleLogin);
+  }
 
-    if (response.success) {
-      this.phone_code_hash = response.phone_code_hash;
-      this.phone = this.inputElement.value;
-
-      this.loginButton.removeEventListener("click", this.loginPhone);
-      this.loginButton.addEventListener("click", this.loginCode);
-
-      this.changeFormLabels("code");
-      this.loginButton.disabled = false;
-      this.loginButton.textContent = "Войти";
-    } else {
-      this.inputError.textContent =
-        "Неверный пароль";
-      this.authUnOkPopup();
-      this.changeErrorLabel(true);
-      this.loginButton.disabled = false;
-      this.loginButton.textContent = "Войти";
+  /**
+   * @method handleKeyDown
+   * @description Handle Enter key to submit
+   * @param {Event} event
+   */
+  handleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      this.loginButton.click();
     }
   };
+
   /**
-    * @method loginCode
-    * @description метод, который обрабатывает данные из поля ввода, проверяет на корректность и при успешно пройденной проверке переходит на другой этап авторизации
-  */
-  loginCode = async () => {
+   * @method handleLogin
+   * @description Dispatch login based on current state
+   */
+  handleLogin = () => {
+    if (this.state === "phone") {
+      this.handlePhoneSubmit();
+    } else if (this.state === "code") {
+      this.handleCodeSubmit();
+    } else if (this.state === "password") {
+      this.handlePasswordSubmit();
+    }
+  };
+
+  /**
+   * @method handlePhoneSubmit
+   * @description Submit phone number
+   */
+  handlePhoneSubmit = async () => {
+    const phone = this.inputElement.value.trim();
+
+    if (!phone) {
+      this.loginError.textContent = i18n.t("login.invalid_phone");
+      this.loginError.classList.remove("hide");
+      return;
+    }
+
     this.loginButton.disabled = true;
-    this.loginButton.innerHTML = `
-      <div class="spinner">
-        <div class="block"></div>
-      </div>
-    `;
-    this.lostFocus();
-    let phone = this.phone;
-    let code = this.inputElement.value;
+    this.loginButton.textContent = "...";
 
-    const response = await eel.login_code(phone, code)();
-    // const response = {success: true, phone_code_hash: 123, need_password: true}
+    try {
+      const response = await eel.login_phone(phone)();
 
-    if (response.success) {
-      if (response.need_password) {
-        this.phone_code_hash = response.phone_code_hash;
-        this.code = code;
-        this.phone = this.inputElement.value;
-
-        this.loginButton.removeEventListener("click", this.loginPhone);
-        this.loginButton.addEventListener("click", this.loginPassword);
-
-        this.changeFormLabels("password");
+      if (response.success) {
+        this.phone = phone;
+        this.phoneCodeHash = response.phone_code_hash;
+        this.state = "code";
+        this.updateForm("code");
       } else {
-        localStorage.setItem("userInfo", JSON.stringify(response.user));
-
-        this.authDonePopup();
+        this.loginError.textContent = i18n.t("login.invalid_phone");
+        this.loginError.classList.remove("hide");
       }
-
-      this.loginButton.disabled = false;
-      this.loginButton.textContent = "Войти";
-    } else {
-      this.changeErrorLabel(true);
-      this.loginButton.disabled = false;
-      this.loginButton.textContent = "Войти";
+    } catch (e) {
+      this.loginError.textContent = i18n.t("login.invalid_phone");
+      this.loginError.classList.remove("hide");
     }
+
+    this.loginButton.disabled = false;
+    this.loginButton.textContent = i18n.t("login.submit");
   };
 
   /**
-    * @method loginPassword
-    * @description метод, который обрабатывает данные из поля ввода, проверяет на корректность и при успешно пройденной проверке завершает авторизацию
+   * @method handleCodeSubmit
+   * @description Submit confirmation code
    */
-  loginPassword = async () => {
+  handleCodeSubmit = async () => {
+    const code = this.inputElement.value.trim();
+
+    if (!code) {
+      this.loginError.textContent = i18n.t("login.invalid_code");
+      this.loginError.classList.remove("hide");
+      return;
+    }
+
     this.loginButton.disabled = true;
-    this.loginButton.innerHTML = `
-      <div class="spinner">
-        <div class="block"></div>
-      </div>
-    `;
-    let password = this.inputElement.value;
-    let phone = this.phone;
-    let phone_code_hash = this.phone_code_hash;
+    this.loginButton.textContent = "...";
 
-    const response = await eel.login_password(
-      phone,
-      password,
-      phone_code_hash
-    )();
-    // const response = {success: true, user: {username: '123123'}}
+    try {
+      const response = await eel.login_code(this.phone, code)();
 
-    if (response.success) {
-      this.changeErrorLabel(false);
-
-      localStorage.setItem("userInfo", JSON.stringify(response.user));
-
-      this.loginButton.removeEventListener("click", this.loginPassword);
-      document.removeEventListener("keydown", this.click);
-
-      document.querySelector(".login").classList.add("hide");
-      document
-        .querySelector(".table-container.main-table")
-        .classList.remove("hide");
-
-      new Header(response.user).changeAvatar(response.picture);
-      new Table().getData();
-
-      this.authDonePopup();
-      this.loginButton.disabled = false;
-      this.loginButton.textContent = "Войти";
-    } else {
-      console.error("error");
-      this.log();
-      this.changeErrorLabel(true);
-      this.loginButton.disabled = false;
-      this.loginButton.textContent = "Войти";
-    }
-  };
-
-  /**
-   * @method log
-   * @description метод, который логирует данные
-   */
-  log = () => {
-    console.debug("number: ", this.phone);
-    console.debug("phone_code_hash: ", this.phone_code_hash);
-    console.debug("code: ", this.code);
-    console.debug("password: ", this.password);
-  };
-
-  /**
-   * @method lostFocus
-   * @description метод, который переносит фокус с кнопки на поле ввода
-   */
-  lostFocus = () => {
-    this.loginButton.blur();
-    this.inputElement.focus();
-  };
-
-  /**
-   * @method authDonePopup
-   * @description метод, который открывает попап с уведомлением об успешной авторизации
-   */
-  authDonePopup = () => {
-    const popup = new Popup(`
-<div class='popup-content'>
-  <h2>Вы успешно авторизовались</h2>
-  <div class='buttons'>
-    <button id='popup-done'>ОК</button>
-  </div>
-</div>
-`);
-
-    popup.show();
-
-    function addFolderHandler() {
-      popup.close();
+      if (response.success) {
+        if (response.need_password) {
+          this.state = "password";
+          this.updateForm("password");
+        } else {
+          this.showSuccessPopup();
+        }
+      } else {
+        this.loginError.textContent = i18n.t("login.invalid_code");
+        this.loginError.classList.remove("hide");
+      }
+    } catch (e) {
+      this.loginError.textContent = i18n.t("login.invalid_code");
+      this.loginError.classList.remove("hide");
     }
 
-    document
-      .getElementById("popup-done")
-      .addEventListener("click", addFolderHandler, {
-        once: true,
-      });
+    this.loginButton.disabled = false;
+    this.loginButton.textContent = i18n.t("login.submit");
   };
 
   /**
-   * @method authUnOkPopup
-   * @description метод, который открывает попап с уведомлением об не успешной авторизации
+   * @method handlePasswordSubmit
+   * @description Submit 2FA password
    */
-  authUnOkPopup = () => {
-    const popup = new Popup(`
-<div class='popup-content'>
-  <h2>Произошла ошибка</h2>
-  <p>Попробуйте еще раз ввести номер телефона или попробуйте войти позже</p>
-  <div class='buttons'>
-    <button id='popup-done'>ОК</button>
-  </div>
-</div>
-`);
+  handlePasswordSubmit = async () => {
+    const password = this.inputElement.value.trim();
 
-    popup.show();
-
-    function addFolderHandler() {
-      popup.close();
+    if (!password) {
+      this.loginError.textContent = i18n.t("login.invalid_password");
+      this.loginError.classList.remove("hide");
+      return;
     }
 
-    document
-      .getElementById("popup-done")
-      .addEventListener("click", addFolderHandler, {
-        once: true,
-      });
-  };
+    this.loginButton.disabled = true;
+    this.loginButton.textContent = "...";
 
-  /**
-   * @method changeErrorLabel
-   * @description метод, который скрывает/показывает уведомления об ошибке
-   * @param {Boolean} isError 
-   */
-  changeErrorLabel = (isError) => {
-    if (isError) {
-      this.inputElement.classList.add("error");
-      this.inputError.classList.remove("hide");
-    } else {
-      this.inputElement.classList.remove("error");
-      this.inputError.classList.add("hide");
+    try {
+      const response = await eel.login_password(
+        this.phone,
+        password,
+        this.phoneCodeHash,
+      )();
+
+      if (response.success) {
+        this.showSuccessPopup();
+      } else {
+        this.loginError.textContent = i18n.t("login.invalid_password");
+        this.loginError.classList.remove("hide");
+      }
+    } catch (e) {
+      this.loginError.textContent = i18n.t("login.invalid_password");
+      this.loginError.classList.remove("hide");
     }
+
+    this.loginButton.disabled = false;
+    this.loginButton.textContent = i18n.t("login.submit");
   };
 
   /**
-   * @method changeFormLabels
-   * @description метод, который меняет надписи в форме в зависимости от переданного парамета type
-   * @param {String} type тип поля ввода
+   * @method updateForm
+   * @description Update form labels based on state
+   * @param {String} type form state: "phone", "code", or "password"
    */
-  changeFormLabels = (type) => {
-    this.changeErrorLabel(false);
-    if (type === "text") {
-      this.inputError.textContent =
-        "Неверный номер телефона";
-      document.querySelector(".login-label").textContent =
-        "Введите номер телефона";
-      this.inputElement.value = "";
-      this.inputElement.type = "text";
-      this.inputElement.placeholder = "Номер телефона";
+  updateForm(type) {
+    this.loginError.classList.add("hide");
+    this.inputElement.value = "";
+
+    if (type === "phone") {
+      this.loginLabel.textContent = i18n.t("login.phone_label");
+      this.loginError.textContent = i18n.t("login.invalid_phone");
+      this.inputElement.placeholder = i18n.t("login.phone_placeholder");
+      this.inputElement.type = "tel";
     } else if (type === "code") {
-      this.inputError.textContent =
-        "Неверный код подтверждения";
-      document.querySelector(".login-label").textContent =
-        "Введите код подтверждения";
-      this.inputElement.value = "";
-      this.inputElement.type = "number";
-      this.inputElement.placeholder = "Код подтверждения";
+      this.loginLabel.textContent = i18n.t("login.code_label");
+      this.loginError.textContent = i18n.t("login.invalid_code");
+      this.inputElement.placeholder = i18n.t("login.code_placeholder");
+      this.inputElement.type = "text";
     } else if (type === "password") {
-      this.inputError.textContent =
-        "";
-      document.querySelector(".login-label").textContent = "Введите пароль";
-      this.inputElement.value = "";
+      this.loginLabel.textContent = i18n.t("login.password_label");
+      this.loginError.textContent = i18n.t("login.invalid_password");
+      this.inputElement.placeholder = i18n.t("login.password_placeholder");
       this.inputElement.type = "password";
-      this.inputElement.placeholder = "Пароль";
     }
-  };
+  }
+
+  /**
+   * @method showSuccessPopup
+   * @description Show success authorization popup
+   */
+  showSuccessPopup() {
+    const popupComponent = new Popup(/* html */ `
+      <div class='popup-content'>
+        <h2>${i18n.t("login.success_title")}</h2>
+        <p>${i18n.t("login.success_hint")}</p>
+        <div class='buttons'>
+          <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
+        </div>
+      </div>
+    `);
+
+    popupComponent.show();
+
+    document
+      .getElementById("popup-done")
+      .addEventListener("click", () => {
+        popupComponent.close();
+        window.location.reload();
+      }, { once: true });
+  }
+
+  /**
+   * @method showErrorPopup
+   * @description Show error popup
+   */
+  showErrorPopup() {
+    const popupComponent = new Popup(/* html */ `
+      <div class='popup-content'>
+        <h2>${i18n.t("login.error_title")}</h2>
+        <p>${i18n.t("login.error_hint")}</p>
+        <div class='buttons'>
+          <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
+        </div>
+      </div>
+    `);
+
+    popupComponent.show();
+
+    document
+      .getElementById("popup-done")
+      .addEventListener("click", () => {
+        popupComponent.close();
+      }, { once: true });
+  }
 }
