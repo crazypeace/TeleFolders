@@ -10,6 +10,8 @@
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/Noradrenalin-team/TeleFolders)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Noradrenalin-team/TeleFolders)
 
+[🇺🇸 English](README.en.md) | [🇨🇳 中文](README.zh.md)
+
 TeleFolders - это менеджер папок для управления чатами и каналами в Telegram
 
 ## Что можно делать с TeleFolders
