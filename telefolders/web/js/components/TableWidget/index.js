@@ -128,28 +128,34 @@ export default class Table {
 
     popupComponent.show();
 
-    function addFolderHandler() {
-      document
-        .getElementById("popup-cancle")
-        .removeEventListener("click", cancleHandler);
+    const doneBtn = document.getElementById("popup-done");
+    const cancelBtn = document.getElementById("popup-cancle");
+    const folderInput = document.getElementById("folder-name");
+    const table = this; // capture Table instance
 
-      popupComponent.close();
+    function addFolderHandler() {
+      const title = folderInput.value.trim();
+      if (!title) return;
+
+      doneBtn.disabled = true;
+      doneBtn.textContent = "...";
+
+      eel.create_folder(title)(async (response) => {
+        popupComponent.close();
+        if (response.success) {
+          await table.getData();
+        } else {
+          console.error("Failed to create folder:", response.error);
+        }
+      });
     }
 
     function cancleHandler() {
-      document
-        .getElementById("popup-done")
-        .removeEventListener("click", addFolderHandler);
-
       popupComponent.close();
     }
 
-    document
-      .getElementById("popup-done")
-      .addEventListener("click", addFolderHandler, { once: true });
-    document
-      .getElementById("popup-cancle")
-      .addEventListener("click", cancleHandler, { once: true });
+    doneBtn.addEventListener("click", addFolderHandler, { once: true });
+    cancelBtn.addEventListener("click", cancleHandler, { once: true });
   };
 
   /**
@@ -170,9 +176,12 @@ export default class Table {
     if (folders.length === 0) {
       chats.map((value) => {
         html += /* html */ `
-          <td data-id="${value.chat_id}">${value.title}</td>
+          <tr>
+            <td data-id="${value.chat_id}" class="title">${value.title}</td>
+          </tr>
         `;
       });
+      tbodyElement.insertAdjacentHTML("beforeend", html);
       return;
     }
 
@@ -326,24 +335,29 @@ export default class Table {
    * @param {Event} event
    */
   handleClick = (event) => {
-    if (event.target.className === "button exclude") {
-      this.setChatRelation(event.target, null);
-    } else if (event.target.className === "button include") {
-      this.setChatRelation(event.target, "pinned");
-    } else if (event.target.className === "button pinned") {
-      this.setChatRelation(event.target, "exclude");
-    } else if (event.target.className === "button null") {
-      this.setChatRelation(event.target, "include");
-    } else if (event.target.className === "button archive") {
-      this.setArchiveRelation(event.target);
-    } else if (event.target.className === "buttons flag") {
-      let _event = event.target.parentElement;
+    // Find the actual button if user clicked img inside it
+    const button = event.target.closest("button");
+    const target = button || event.target;
+    console.log("[handleClick] target:", target.className, "button:", button?.className, "event.target:", event.target.className);
+    
+    if (target.className === "button exclude") {
+      this.setChatRelation(target, null);
+    } else if (target.className === "button include") {
+      this.setChatRelation(target, "pinned");
+    } else if (target.className === "button pinned") {
+      this.setChatRelation(target, "exclude");
+    } else if (target.className === "button null") {
+      this.setChatRelation(target, "include");
+    } else if (target.className === "button archive") {
+      this.setArchiveRelation(target);
+    } else if (target.className === "buttons flag") {
+      let _event = target.parentElement;
       this.setFlagRelation(_event);
-    } else if (event.target.className === "button flag") {
-      let _event = event.target.parentElement.parentElement;
+    } else if (target.className === "button flag") {
+      let _event = target.parentElement.parentElement;
       this.setFlagRelation(_event);
-    } else if (event.target.className === "th title") {
-      const parent = event.target.parentElement;
+    } else if (target.className === "th title") {
+      const parent = target.parentElement;
       const chatIndex = parent.getAttribute("data-chat-index");
 
       const floatView = new FloatView();
@@ -351,8 +365,8 @@ export default class Table {
       floatView.close();
       floatView.chatIndex = chatIndex;
       floatView.show();
-    } else if (event.target.className === "title") {
-      const parent = event.target.parentElement.parentElement.parentElement;
+    } else if (target.className === "title") {
+      const parent = target.parentElement.parentElement.parentElement;
       const chatIndex = parent.getAttribute("data-chat-index");
 
       const floatView = new FloatView();
@@ -659,15 +673,13 @@ export default class Table {
 
     let response = await eel.set_chat_archive(Number(chatId), !value)();
 
-    value = !value;
-
     let foundChatIndex = this.chats.findIndex((chat) => {
       return chat.chat_id === chatId;
     });
 
-    this.chats[foundChatIndex].archived = value;
-
     if (response.success) {
+      value = response.current_value;
+      this.chats[foundChatIndex].archived = value;
       trElement.setAttribute("data-archive-state", value);
       let imagePath = "";
 
@@ -685,7 +697,15 @@ export default class Table {
           <img src="${imagePath}" />
         `;
     } else {
-      console.log("err");
+      value = response.current_value;
+      this.chats[foundChatIndex].archived = value;
+      trElement.setAttribute("data-archive-state", value);
+      let imagePath = value
+        ? "/img/svg/plus-black.svg"
+        : "/img/svg/plus-white.svg";
+      event.innerHTML = /* html */ `
+          <img src="${imagePath}" />
+        `;
     }
   };
 

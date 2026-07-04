@@ -75,11 +75,21 @@ def set_folder_flag(folder_id, flag, value):
 
 
 @eel.expose
-def get_language():
-    return os.environ.get("TELEFOLDERS_LANG", "ru")
+def export_csv():
+    return telefolders.export_csv()
 
 
 @eel.expose
-def set_language(lang):
-    os.environ["TELEFOLDERS_LANG"] = lang
-    return {"success": True, "lang": lang}
+def import_csv(csv_string, force=False):
+    return telefolders.import_csv(csv_string, force)
+
+
+@eel.expose
+def create_folder(title):
+    return telefolders.create_folder(title)
+
+
+@eel.expose
+def get_language():
+    return os.environ.get("TELEFOLDERS_LANG", "en")
+

@@ -21,6 +21,9 @@
   "header.reload": "Refresh chat list",
   "header.logout": "Log out",
 
+  "header.export_csv": "Export CSV",
+  "header.import_csv": "Import CSV",
+
   "table.all_chats": "All chats",
   "table.archive": "Archive",
   "table.favorites": "Favorites",

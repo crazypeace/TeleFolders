@@ -4,7 +4,7 @@
  */
 class I18n {
   constructor() {
-    this.locale = "ru";
+    this.locale = "en";
     this.translations = {};
   }
 
@@ -43,11 +43,20 @@ class I18n {
   }
 
   /**
+   * @method loadDefault
+   * @description Load default locale (before Eel connects)
+   */
+  async loadDefault() {
+    await this.load();
+    this.applyToDOM();
+  }
+
+  /**
    * @method init
-   * @description Determine locale: server > localStorage > default "ru"
+   * @description Determine locale: server > default "ru"
    */
   async init() {
-    // Try to get language from server first
+    // Get language from server (set via --lang CLI arg)
     try {
       if (typeof eel !== "undefined") {
         const result = await eel.get_language()();
@@ -56,44 +65,11 @@ class I18n {
         }
       }
     } catch (e) {
-      // Eel not ready yet, fall back to localStorage
+      // Eel not ready yet, use default
     }
 
-    // If server didn't return anything, check localStorage
-    if (!this.locale || this.locale === "ru") {
-      const saved = localStorage.getItem("locale");
-      if (saved) {
-        this.locale = saved;
-      }
-    }
-
-    // Persist to localStorage
-    localStorage.setItem("locale", this.locale);
-
-    await this.load();
-  }
-
-  /**
-   * @method setLocale
-   * @description Change locale, reload translations, notify listeners
-   * @param {String} locale locale code (e.g. "ru", "en")
-   */
-  async setLocale(locale) {
-    this.locale = locale;
-    localStorage.setItem("locale", locale);
     await this.load();
     this.applyToDOM();
-
-    // Sync with server
-    try {
-      if (typeof eel !== "undefined") {
-        await eel.set_language(locale)();
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    document.dispatchEvent(new Event("locale-changed"));
   }
 }
 

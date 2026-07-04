@@ -21,6 +21,9 @@
   "header.reload": "Обновить список чатов",
   "header.logout": "Выйти",
 
+  "header.export_csv": "Экспорт CSV",
+  "header.import_csv": "Импорт CSV",
+
   "table.all_chats": "Все чаты",
   "table.archive": "Архив",
   "table.favorites": "Избранное",

@@ -14,7 +14,7 @@ def set_env_vars():
     parser.add_argument(
         "--lang",
         required=False,
-        default="ru",
+        default="en",
         help="UI language: ru or en (default: ru)",
     )
 
@@ -31,17 +31,12 @@ def set_env_vars():
 def main():
     eel.init(os.path.join(os.path.dirname(os.path.realpath(__file__)), "web"))
 
-    chrome_args = [
-        "--no-sandbox",
-        "--disable-gpu",
-        "--disable-dev-shm-usage",
-    ]
-
+    # Pure HTTP server mode — open in your own browser
     eel.start(
         "main.html",
-        mode="chrome",
+        mode=None,
         host="0.0.0.0",
-        cmdline_args=chrome_args,
+        port=8000,
     )
 
 

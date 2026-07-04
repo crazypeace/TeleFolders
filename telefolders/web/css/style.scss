@@ -484,10 +484,9 @@ body {
           }
 
           thead tr th span {
-            -webkit-writing-mode: vertical-rl;
-            -ms-writing-mode: tb-rl;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
+            -webkit-writing-mode: sideways-lr;
+            -ms-writing-mode: sideways-lr;
+            writing-mode: sideways-lr;
           }
 
           tbody td:not(:first-child) {

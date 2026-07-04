@@ -5,14 +5,9 @@ import Header from "../HeaderWidget/index.js";
 import Popup from "../PopupWidget/index.js";
 
 export default class Main {
-  async initI18n() {
-    // Load translations from localStorage immediately
-    const saved = localStorage.getItem("locale");
-    if (saved) {
-      i18n.locale = saved;
-    }
-    await i18n.load();
-    i18n.applyToDOM();
+  constructor() {
+    this.loginInstance = null;
+    this.headerInstance = null;
   }
 
   async init() {
@@ -23,7 +18,6 @@ export default class Main {
       const serverLang = await eel.get_language()();
       if (serverLang && serverLang !== i18n.locale) {
         i18n.locale = serverLang;
-        localStorage.setItem("locale", serverLang);
         await i18n.load();
         i18n.applyToDOM();
       }
@@ -37,7 +31,7 @@ export default class Main {
           <h2>${i18n.t("error.title")}</h2>
           <p>${i18n.t("error.generic")}</p>
           <p>
-            <a 
+            <a
               style="color: blue; text-decoration: underline;"
               href="https://t.me/+4iWgAed_aDYyMWEy"
             >
@@ -66,6 +60,7 @@ export default class Main {
         document.querySelector(".spinner_large").classList.add("hide");
         const login = new Login();
         login.init();
+        this.loginInstance = login;
 
         document.querySelector(".login").classList.remove("hide");
         document.querySelector(".spinner_large").classList.add("hide");
@@ -73,6 +68,7 @@ export default class Main {
         localStorage.setItem("user-id", response.id);
 
         const header = new Header(response);
+        this.headerInstance = header;
 
         new Table().getData();
 

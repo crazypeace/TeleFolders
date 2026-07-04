@@ -463,10 +463,9 @@ body .app main.main .table-container .table tbody tr:not(:last-child) {
   border-bottom: 1px black solid;
 }
 body .app main.main .table-container .table thead tr th span {
-  -webkit-writing-mode: vertical-rl;
-  -ms-writing-mode: tb-rl;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  -webkit-writing-mode: sideways-lr;
+  -ms-writing-mode: sideways-lr;
+  writing-mode: sideways-lr;
 }
 body .app main.main .table-container .table tbody td:not(:first-child) {
   position: relative;
@@ -552,5 +551,7 @@ body .hide {
   height: 0;
   width: 0;
 }
+
+
 
 /*# sourceMappingURL=style.css.map */

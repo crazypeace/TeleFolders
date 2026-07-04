@@ -17,10 +17,6 @@ export default class Header {
     this.userMenuElement = document.querySelector(".user-menu");
     this.init();
     this.table = new Table();
-
-    document.addEventListener("locale-changed", () => {
-      this.applyTranslations();
-    });
   }
 
   /**
@@ -34,17 +30,146 @@ export default class Header {
     );
     window.addEventListener("click", this.handleWindowClick);
 
-    // Initialize language switcher text
-    this.updateLangSwitch();
-
-    // Language switcher click
-    const langSwitch = document.getElementById("langSwitch");
-    if (langSwitch) {
-      langSwitch.addEventListener("click", this.handleLangSwitch);
-    }
-
     // Apply initial translations to static elements
     this.applyTranslations();
+
+    // Add CSV export/import items to user menu
+    this.addCsvMenuItems();
+  };
+
+  /**
+   * @method addCsvMenuItems
+   * @description Add CSV export/import menu items
+   */
+  addCsvMenuItems = () => {
+    const userMenu = this.userMenuElement;
+
+    // Export CSV
+    const exportBtn = document.createElement("p");
+    exportBtn.className = "csv-export";
+    exportBtn.setAttribute("data-i18n", "header.export_csv");
+    exportBtn.textContent = i18n.t("header.export_csv");
+    exportBtn.addEventListener("click", this.handleExportCsv);
+    userMenu.appendChild(exportBtn);
+
+    // Import CSV
+    const importBtn = document.createElement("p");
+    importBtn.className = "csv-import";
+    importBtn.setAttribute("data-i18n", "header.import_csv");
+    importBtn.textContent = i18n.t("header.import_csv");
+    importBtn.addEventListener("click", this.handleImportCsv);
+    userMenu.appendChild(importBtn);
+
+    // Hidden file input for import
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".csv";
+    fileInput.style.display = "none";
+    fileInput.addEventListener("change", this.handleImportFile);
+    document.body.appendChild(fileInput);
+    this.csvFileInput = fileInput;
+  };
+
+  /**
+   * @method handleExportCsv
+   * @description Export folder assignments to CSV
+   */
+  handleExportCsv = async () => {
+    try {
+      const response = await eel.export_csv()();
+      if (response.success) {
+        // Create download
+        const bom = "\uFEFF";
+        const blob = new Blob([bom + response.csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "telefolders_export.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+      } else {
+        console.error("Export failed:", response.error);
+      }
+    } catch (e) {
+      console.error("Export error:", e);
+    }
+    this.userMenuElement.classList.add("hide");
+  };
+
+  /**
+   * @method handleImportCsv
+   * @description Trigger file picker for CSV import
+   */
+  handleImportCsv = () => {
+    this.csvFileInput.click();
+    this.userMenuElement.classList.add("hide");
+  };
+
+  /**
+   * @method handleImportFile
+   * @description Handle selected CSV file
+   */
+  handleImportFile = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const csvString = e.target.result;
+      await this.processCsvImport(csvString);
+    };
+    reader.readAsText(file);
+    // Reset file input
+    event.target.value = "";
+  };
+
+  /**
+   * @method processCsvImport
+   * @description Validate and import CSV
+   */
+  processCsvImport = async (csvString) => {
+    try {
+      // First pass: validate without force
+      let response = await eel.import_csv(csvString, false)();
+
+      if (response.success) {
+        // All good, refresh table
+        await this.table.getData();
+        return;
+      }
+
+      // Check if it's an order mismatch (count matches but order differs)
+      if (response.validation && response.validation.count_match && !response.validation.order_match) {
+        // Show popup asking user to continue or cancel
+        this.showImportMismatchPopup(csvString);
+        return;
+      }
+
+      // Other error (count mismatch, etc.)
+      console.error("Import failed:", response.error);
+      alert(response.error || "Import failed");
+    } catch (e) {
+      console.error("Import error:", e);
+    }
+  };
+
+  /**
+   * @method showImportMismatchPopup
+   * @description Show popup for folder order mismatch
+   */
+  showImportMismatchPopup = (csvString) => {
+    // Simple confirm dialog
+    const confirmed = confirm("Folder 顺序不一致. 是否继续导入?");
+    if (confirmed) {
+      // Retry with force=true
+      eel.import_csv(csvString, true)(async (response) => {
+        if (response.success) {
+          await this.table.getData();
+        } else {
+          alert("Import failed: " + (response.error || "Unknown error"));
+        }
+      });
+    }
   };
 
   /**
@@ -71,32 +196,16 @@ export default class Header {
       logout.textContent = i18n.t("header.logout");
     }
 
-    this.updateLangSwitch();
-  }
-
-  /**
-   * @method updateLangSwitch
-   * @description Update language switcher text
-   */
-  updateLangSwitch() {
-    const langSwitch = document.getElementById("langSwitch");
-    if (langSwitch) {
-      langSwitch.textContent =
-        i18n.locale === "ru" ? "English" : "Русский";
+    // Update dynamically created CSV menu items
+    const exportBtn = this.userMenuElement.querySelector(".csv-export");
+    if (exportBtn) {
+      exportBtn.textContent = i18n.t("header.export_csv");
+    }
+    const importBtn = this.userMenuElement.querySelector(".csv-import");
+    if (importBtn) {
+      importBtn.textContent = i18n.t("header.import_csv");
     }
   }
-
-  /**
-   * @method handleLangSwitch
-   * @description Switch language
-   */
-  handleLangSwitch = async (event) => {
-    event.stopPropagation();
-    const newLocale = i18n.locale === "ru" ? "en" : "ru";
-    await i18n.setLocale(newLocale);
-    // Refresh table data to re-render with new language
-    this.table.drawChats();
-  };
 
   /**
    * @method changeAvatar

@@ -14,15 +14,4 @@ p.input-error {
   font-size: 0.7rem;
   color: red;
 }
-
-.lang-switch {
-  cursor: pointer;
-  color: #0066cc;
-  text-decoration: underline;
-}
-
-.lang-switch:hover {
-  color: #004499;
-}
-
-/*# sourceMappingURL=components.css.map */
+# sourceMappingURL=components.css.map */
