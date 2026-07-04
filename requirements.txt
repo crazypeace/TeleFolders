@@ -1,7 +1,7 @@
 bottle-websocket==0.2.9 ; python_version >= "3.12" and python_version < "4.0"
 bottle==0.12.25 ; python_version >= "3.12" and python_version < "4.0"
 cffi==1.16.0 ; platform_python_implementation == "CPython" and sys_platform == "win32" and python_version >= "3.12" and python_version < "4.0"
-eel @ git+https://github.com/philipdp123/Eel.git@f610fab93f1b22ee42fbc3bdcf07cb5cc7124172 ; python_version >= "3.12" and python_version < "4.0"
+eel>=0.18.0 ; python_version >= "3.12" and python_version < "4.0"
 future==1.0.0 ; python_version >= "3.12" and python_version < "4.0"
 gevent-websocket==0.10.1 ; python_version >= "3.12" and python_version < "4.0"
 gevent==24.2.1 ; python_version >= "3.12" and python_version < "4.0"
