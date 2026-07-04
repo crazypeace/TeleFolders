@@ -18,9 +18,7 @@ class Telefolders:
         self.client: TelegramClient = None
 
     def init(self):
-
         if not self.client:
-            # from https://my.telegram.org, under API Development.
             api_id = os.environ.get("TELEFOLDERS_API_ID")
             api_hash = os.environ.get("TELEFOLDERS_API_HASH")
 
@@ -40,7 +38,9 @@ class Telefolders:
                 else:
                     return {"success": True, "authorized": False}
             except Exception as e:
-                return {"success": False, "error": str(e), "error_code": "unknown"}
+                # Session exists but revoked, or network error
+                # Return authorized:false so UI shows login form, not error popup
+                return {"success": True, "authorized": False, "connection_error": str(e)}
 
         if self.client.is_user_authorized():
             return {"success": True, "authorized": True}
@@ -93,18 +93,22 @@ class Telefolders:
             return {"success": False, "error": str(e), "error_code": "unknown"}
 
     def get_user(self):
-        me = self.client.get_me()
-        return (
-            {
+        if self.client is None:
+            return None
+        try:
+            if not self.client.is_user_authorized():
+                return None
+            me = self.client.get_me()
+            if me is None:
+                return None
+            return {
                 "username": me.username,
                 "first_name": me.first_name,
                 "last_name": me.last_name,
-                # "picture": self.client.download_profile_photo("me", file=bytes),
                 "id": me.id,
             }
-            if self.client.is_user_authorized()
-            else None
-        )
+        except Exception:
+            return None
 
     def get_folders(self):
         try:
