@@ -1,7 +1,7 @@
 #!/bin/bash
 cd /root/TeleFolders
-export TELEFOLDERS_API_ID=611335
-export TELEFOLDERS_API_HASH=d524b414d21f4d37f08684c1df41ac9c
+export TELEFOLDERS_API_ID=${TELEFOLDERS_API_ID:-your_api_id_here}
+export TELEFOLDERS_API_HASH=${TELEFOLDERS_API_HASH:-your_api_hash_here}
 
 while true; do
     # Kill any existing telefolders on port 8000
