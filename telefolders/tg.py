@@ -212,15 +212,11 @@ class Telefolders:
                     chats_with_folders[chat_id]["pinned"].append(folder.id)
 
         # Get contacts list for classification
-        contacts_ids = set()
-        try:
-            contacts = self.client.get_contacts()
-            contacts_ids = {c.id for c in contacts}
-        except Exception as e:
-            print(f"[get_all_chats] ERROR getting contacts: {e}", flush=True)
+        # Contact classification is intentionally skipped:
+        # it relied on TelegramClient.get_contacts() which was removed
+        # from Telethon 1.44.0, and no UI component consumed the data.
 
         ans = []
-
         try:
             for chat in self.client.iter_dialogs():
                 peer_id = chat.entity.id
@@ -235,9 +231,6 @@ class Telefolders:
                 is_group = (is_megagroup or is_gigagroup) and not is_broadcast
                 is_channel = is_broadcast
                 is_private_user = not is_bot and not is_group and not is_channel
-
-                is_contact = peer_id in contacts_ids if is_private_user else False
-                is_non_contact = is_private_user and not is_contact
 
                 # Muted status
                 mute_until = getattr(chat.dialog.notify_settings, 'mute_until', None)
@@ -258,8 +251,6 @@ class Telefolders:
                         "pinned": chat.pinned,
                         "title": chat.title,
                         "archived": archived,
-                        "is_contact": is_contact,
-                        "is_non_contact": is_non_contact,
                         "is_group": is_group,
                         "is_channel": is_channel,
                         "is_bot": is_bot,
