@@ -200,6 +200,109 @@ export default class Header {
     fileInput.addEventListener("change", this.handleImportFile);
     document.body.appendChild(fileInput);
     this.csvFileInput = fileInput;
+
+    // Debug: CSV Compare Test
+    const compareBtn = document.createElement("p");
+    compareBtn.className = "csv-compare-test";
+    compareBtn.textContent = "🔍 CSV Debug Compare";
+    compareBtn.style.cssText = "color:#f39c12;font-weight:bold;border-top:1px solid #555;margin-top:4px;padding-top:4px;";
+    compareBtn.addEventListener("click", this.handleCsvCompare);
+    userMenu.appendChild(compareBtn);
+  };
+
+  /**
+   * @method handleCsvCompare
+   * @description Compare frontend vs backend CSV to find exact differences
+   */
+  handleCsvCompare = async () => {
+    this.userMenuElement.classList.add("hide");
+    console.clear();
+    console.log("=== CSV Debug Compare (No Filter) ===");
+
+    // Step 1: Reset all filters to ensure no filter is active
+    const types = ["archived", "personal", "bot", "group", "channel"];
+    types.forEach(t => localStorage.removeItem(t + "State"));
+
+    // Step 2: Wait for table to redraw with all chats
+    await new Promise(r => setTimeout(r, 500));
+
+    const table = new Table();
+    const allChats = table.chats;
+    const folders = table.folders;
+
+    console.log("前端 chats 数量:", allChats ? allChats.length : "(no data)");
+    console.log("前端 folders 数量:", folders ? folders.length : "(no data)");
+
+    if (!allChats || !folders) {
+      console.error("ERROR: chats or folders not loaded. Try again in a moment.");
+      return;
+    }
+
+    // Step 3: Generate frontend CSV
+    const frontendCSV = table.generateCSV(allChats, folders);
+    const feLines = frontendCSV.replace(/\r\n/g, "\n").split("\n");
+    console.log("前端 CSV lines:", feLines.length, "(including header + trailing empty)");
+
+    // Step 4: Get backend CSV
+    const response = await eel.export_csv()();
+    if (!response.success) {
+      console.error("Backend export failed:", response.error);
+      return;
+    }
+
+    const backendCSV = response.csv;
+    const beLines = backendCSV.replace(/\r\n/g, "\n").split("\n");
+    console.log("后端 CSV lines:", beLines.length, "(including header + trailing empty)");
+
+    // Step 5: Compare
+    if (frontendCSV === backendCSV) {
+      console.log("✅ 完全一致！前端和后端CSV完全相同");
+      return;
+    }
+
+    // Step 6: Extract chat_ids from both
+    function extractChatIds(lines) {
+      const ids = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        // chat_id is the first column (before first comma, or inside quotes)
+        const match = line.match(/^"?([^",]+)"?,/);
+        if (match) ids.push(match[1]);
+      }
+      return ids;
+    }
+
+    const feIds = extractChatIds(feLines);
+    const beIds = extractChatIds(beLines);
+
+    const feSet = new Set(feIds);
+    const beSet = new Set(beIds);
+
+    const onlyInBe = beIds.filter(id => !feSet.has(id));
+    const onlyInFe = feIds.filter(id => !beSet.has(id));
+
+    console.log("---");
+    console.log("前端 chat_ids 数量:", feIds.length);
+    console.log("后端 chat_ids 数量:", beIds.length);
+    console.log("后端多出 chat_id:", onlyInBe);
+    console.log("前端多出 chat_id:", onlyInFe);
+
+    // Show details of first differing row
+    console.log("---");
+    console.log("Header 对比:");
+    console.log("  前端:", JSON.stringify(feLines[0]));
+    console.log("  后端:", JSON.stringify(beLines[0]));
+
+    // Find first data row that differs
+    for (let i = 1; i < Math.max(feLines.length, beLines.length); i++) {
+      if (feLines[i] !== beLines[i]) {
+        console.log(`第一个差异第 ${i} 行:`);
+        console.log("  前端:", JSON.stringify(feLines[i]));
+        console.log("  后端:", JSON.stringify(beLines[i]));
+        break;
+      }
+    }
   };
 
   handleExportCsv = async () => {
