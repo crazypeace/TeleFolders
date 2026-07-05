@@ -13,6 +13,50 @@ def _extract_title(title):
         return title.text
     return str(title) if title else ''
 
+def _parse_proxy_string(proxy_url):
+    """Parse a proxy URL string into a Telethon-compatible proxy tuple.
+    
+    Supports:
+      - socks5://host:port  → ('socks5', host, port)
+      - http://host:port     → ('http', host, port)
+      - mtproto://secret@host:port → ('mtproto', host, port, secret)
+    
+    Returns None if proxy_url is empty/invalid.
+    """
+    if not proxy_url:
+        return None
+
+    proxy_url = proxy_url.strip()
+
+    # MTProto: mtproto://secret@host:port
+    if proxy_url.startswith("mtproto://"):
+        from base64 import b64decode
+        without_proto = proxy_url[len("mtproto://"):]
+        if "@" in without_proto:
+            secret, host_port = without_proto.rsplit("@", 1)
+        else:
+            secret, host_port = "", without_proto
+        host, port = host_port.split(":") if ":" in host_port else (host_port, "443")
+        return ("mtproto", host, int(port), secret)
+
+    # SOCKS5: socks5://host:port
+    if proxy_url.startswith("socks5://") or proxy_url.startswith("socks5h://"):
+        without_proto = proxy_url.split("://", 1)[1]
+        host, port = without_proto.split(":") if ":" in without_proto else (without_proto, "1080")
+        return ("socks5", host, int(port))
+
+    # HTTP/HTTPS: http://user:pass@host:port → ('http', host, port)
+    if proxy_url.startswith("http://") or proxy_url.startswith("https://"):
+        from urllib.parse import urlparse
+        u = urlparse(proxy_url)
+        host = u.hostname
+        port = u.port or 80
+        if host:
+            return ("http", host, port)
+
+    return None
+
+
 class Telefolders:
     def __init__(self):
         self.client: TelegramClient = None
@@ -22,14 +66,21 @@ class Telefolders:
             api_id = os.environ.get("TELEFOLDERS_API_ID")
             api_hash = os.environ.get("TELEFOLDERS_API_HASH")
 
+            proxy = _parse_proxy_string(os.environ.get("TELEFOLDERS_PROXY"))
+
             try:
+                client_kwargs = dict(
+                    lang_code=os.environ.get("TELEFOLDERS_LANG", "ru"),
+                )
+                if proxy:
+                    client_kwargs["proxy"] = proxy
                 self.client = TelegramClient(
                     os.path.join(
                         os.path.dirname(os.path.realpath(__file__)), "telefolders"
                     ),
                     api_id,
                     api_hash,
-                    lang_code=os.environ.get("TELEFOLDERS_LANG", "ru"),
+                    **client_kwargs
                 )
                 self.client.connect()
 
@@ -49,7 +100,7 @@ class Telefolders:
 
     def login_phone(self, phone):
         try:
-            print(phone)
+            # print(phone)
             r = self.client.send_code_request(phone)
             return {"success": True, "phone_code_hash": r.phone_code_hash}
         except Exception as e:
@@ -57,7 +108,7 @@ class Telefolders:
 
     def login_code(self, phone, code):
         try:
-            print(phone, code)
+            # print(phone, code)
             self.client.sign_in(phone, code)
             return {"success": True, "need_password": False, "user": self.get_user()}
         except errors.rpcerrorlist.SessionPasswordNeededError:
@@ -76,7 +127,7 @@ class Telefolders:
 
     def login_password(self, phone, password, phone_code_hash):
         try:
-            print(phone, password, phone_code_hash)
+            # print(phone, password, phone_code_hash)
             self.client.sign_in(
                 phone, password=password, phone_code_hash=phone_code_hash
             )
@@ -165,7 +216,7 @@ class Telefolders:
                     elif "chat_id" in chat.__dict__:
                         chat_id = chat.chat_id
                     else:
-                        print(chat)
+                        # print(chat)
                         continue
                     if chat_id not in chats_with_folders:
                         chats_with_folders[chat_id] = {
@@ -183,7 +234,7 @@ class Telefolders:
                     elif "chat_id" in chat.__dict__:
                         chat_id = chat.chat_id
                     else:
-                        print(chat)
+                        # print(chat)
                         continue
                     if chat_id not in chats_with_folders:
                         chats_with_folders[chat_id] = {
@@ -201,7 +252,7 @@ class Telefolders:
                     elif "chat_id" in chat.__dict__:
                         chat_id = chat.chat_id
                     else:
-                        print(chat)
+                        # print(chat)
                         continue
                     if chat_id not in chats_with_folders:
                         chats_with_folders[chat_id] = {
@@ -241,8 +292,8 @@ class Telefolders:
                 is_read = unread_count == 0
 
                 archived = chat.archived
-                if chat.id == 777000 or chat.title == "Telegram":
-                    print(f"[get_all_chats] chat_id={chat.id}, title={chat.title!r}, archived={archived}", flush=True)
+                # if chat.id == 777000 or chat.title == "Telegram":
+                #     print(f"[get_all_chats] chat_id={chat.id}, title={chat.title!r}, archived={archived}", flush=True)
 
                 ans.append(
                     {
@@ -288,7 +339,7 @@ class Telefolders:
         except Exception:
             pass
 
-        print(f"[{chat_id}] requested archive={archive}, actual={actual}")
+        # print(f"[{chat_id}] requested archive={archive}, actual={actual}")
 
         if actual is None:
             return {"success": True, "current_value": archive}
@@ -553,7 +604,7 @@ class Telefolders:
     def set_folder_flag(self, folder_id, flag, value):
         result = self.client(GetDialogFiltersRequest())
         folders = result.filters if hasattr(result, 'filters') else result
-        print(folder_id, flag, value)
+        # print(folder_id, flag, value)
 
         for folder_ in folders:
             if "id" in folder_.__dict__ and folder_.id == folder_id:

@@ -15,7 +15,22 @@ def set_env_vars():
         "--lang",
         required=False,
         default="en",
-        help="UI language: ru or en (default: ru)",
+        help="UI language: ru or en (default: en)",
+    )
+    parser.add_argument(
+        "--proxy",
+        required=False,
+        default=None,
+        help="Proxy URL, e.g. socks5://127.0.0.1:7897 or http://127.0.0.1:7897",
+    )
+    parser.add_argument(
+        "--browser",
+        required=False,
+        nargs="?",
+        const="default",
+        default=None,
+        help="Use built-in Eel browser (pass browser name like 'chrome', or omit for default). "
+             "Without this flag, runs as pure HTTP server (access http://<IP>:8000/main.html)",
     )
 
     args = parser.parse_args()
@@ -26,18 +41,31 @@ def set_env_vars():
         os.environ["TELEFOLDERS_API_HASH"] = args.api_hash
 
     os.environ["TELEFOLDERS_LANG"] = args.lang
+    if args.proxy:
+        os.environ["TELEFOLDERS_PROXY"] = args.proxy
+
+    return args.browser
 
 
 def main():
     eel.init(os.path.join(os.path.dirname(os.path.realpath(__file__)), "web"))
 
-    # Pure HTTP server mode — open in your own browser
-    eel.start(
-        "main.html",
-        mode=None,
-        host="0.0.0.0",
-        port=8000,
-    )
+    browser_mode = set_env_vars()
+
+    if browser_mode:
+        # Built-in Eel browser
+        print(f"[TeleFolders] Starting with built-in browser ({browser_mode})...")
+        eel.start("main.html", mode=browser_mode)
+    else:
+        # Pure HTTP server mode — open in your own browser
+        print(f"[TeleFolders] Running at http://localhost:8000/main.html")
+        print(f"[TeleFolders] Open this URL in your browser. Press Ctrl+C to stop.")
+        eel.start(
+            "main.html",
+            mode=None,
+            host="0.0.0.0",
+            port=8000,
+        )
 
 
 if __name__ == "__main__":

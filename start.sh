@@ -2,6 +2,7 @@
 cd /root/TeleFolders
 export TELEFOLDERS_API_ID="${TELEFOLDERS_API_ID:-your_api_id_here}"
 export TELEFOLDERS_API_HASH="${TELEFOLDERS_API_HASH:-your_api_hash_here}"
+export TELEFOLDERS_PROXY="${TELEFOLDERS_PROXY:-socks5://127.0.0.1:1080}"
 
 # Single instance
 LOCK="/tmp/telefolders.lock"
@@ -16,7 +17,7 @@ while true; do
     fi
     
     # Start Eel in background, wait for it to exit
-    .venv/bin/python -m telefolders --lang en &
+    .venv/bin/python -m telefolders --lang en --proxy "$TELEFOLDERS_PROXY" &
     EEL_PID=$!
     wait $EEL_PID
     
