@@ -3,7 +3,7 @@ from telethon import TelegramClient, sync  # noqa
 from telethon.tl.functions.messages import GetDialogFiltersRequest
 from telethon.tl.functions.messages import UpdateDialogFilterRequest
 from telethon import errors
-from telethon.tl.types import DialogFilter, TextWithEntities, InputPeerUser, InputPeerChat, InputPeerChannel
+from telethon.tl.types import DialogFilter, TextWithEntities, InputPeerUser, InputPeerChat, InputPeerChannel, User, Chat, Channel
 
 import os
 
@@ -273,15 +273,28 @@ class Telefolders:
                 peer_id = chat.entity.id
                 entity = chat.entity
 
-                # Classify entity
-                is_bot = getattr(entity, 'bot', False)
-                is_broadcast = getattr(entity, 'broadcast', False)
-                is_megagroup = getattr(entity, 'megagroup', False)
-                is_gigagroup = getattr(entity, 'gigagroup', False)
-
-                is_group = (is_megagroup or is_gigagroup) and not is_broadcast
-                is_channel = is_broadcast
-                is_private_user = not is_bot and not is_group and not is_channel
+                # Classify entity (correct)
+                if isinstance(entity, User):
+                    is_bot = getattr(entity, 'bot', False)
+                    is_private_user = not is_bot
+                    is_group = False
+                    is_channel = False
+                elif isinstance(entity, Chat):
+                    is_bot = False
+                    is_private_user = False
+                    is_group = True
+                    is_channel = False
+                elif isinstance(entity, Channel):
+                    is_bot = False
+                    is_private_user = False
+                    is_group = getattr(entity, 'megagroup', False)
+                    is_channel = not is_group
+                else:
+                    # Fallback
+                    is_bot = getattr(entity, 'bot', False)
+                    is_private_user = not is_bot
+                    is_group = False
+                    is_channel = False
 
                 # Muted status
                 mute_until = getattr(chat.dialog.notify_settings, 'mute_until', None)
