@@ -553,6 +553,61 @@ body .app main.main .table-container .table button {
   background-color: #fff;
   border: none;
 }
+/* ===== Filter bar (horizontal row of ✅/❌ toggles) ===== */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #ddd;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+}
+.filter-bar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+.filter-divider {
+  width: 1px;
+  height: 1.5em;
+  background-color: #ccc;
+  border: none;
+  margin: 0 0.2rem;
+}
+/* ===== Filter buttons (✅/❌ toggle) ===== */
+.filter-btn {
+  cursor: pointer;
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: opacity 0.15s;
+  border-radius: 0.3rem;
+  user-select: none;
+}
+.filter-btn:hover {
+  background-color: #ddd;
+}
+.filter-icon {
+  display: inline-block;
+  width: 1.5em;
+  text-align: center;
+  flex-shrink: 0;
+}
+/* ✅ 状态：正常显示 */
+.filter-btn[data-active="true"] {
+  opacity: 1;
+}
+.filter-btn[data-active="true"] .filter-icon::before {
+  content: "\2705"; /* ✅ */
+}
+/* ❌ 状态：已隐藏 */
+.filter-btn[data-active="false"] {
+  opacity: 0.4;
+}
+.filter-btn[data-active="false"] .filter-icon::before {
+  content: "\274C"; /* ❌ */
+}
+
 body .hide {
   display: none;
 }

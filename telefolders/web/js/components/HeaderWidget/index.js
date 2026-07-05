@@ -35,6 +35,138 @@ export default class Header {
 
     // Add CSV export/import items to user menu
     this.addCsvMenuItems();
+
+    // Setup filter buttons (one by one)
+    this.initArchiveFilter();
+    this.initPersonalFilter();
+    this.initBotFilter();
+    this.initGroupFilter();
+    this.initChannelFilter();
+  };
+
+  /**
+   * @method initArchiveFilter
+   * @description Setup Archived filter button (✅Archived / ❌Archived)
+   */
+  initArchiveFilter = () => {
+    const btn = document.querySelector('[data-type="archived"]');
+    if (!btn) return;
+
+    // Set initial icon
+    this.updateArchiveFilterUI(btn);
+
+    // Bind click handler
+    btn.addEventListener('click', () => {
+      const current = localStorage.getItem('archiveState') || 'false';
+      const next = current === 'true' ? 'false' : 'true';
+      localStorage.setItem('archiveState', next);
+      this.updateArchiveFilterUI(btn);
+
+      if (next === 'true') {
+        this.table.hideArchive();
+      } else {
+        this.table.showArchive();
+      }
+    });
+  };
+
+  /**
+   * @method updateArchiveFilterUI
+   * @description Update ✅/❌ icon on archive filter button
+   */
+  updateArchiveFilterUI = (btn) => {
+    const hidden = localStorage.getItem('archiveState') === 'true';
+    if (hidden) {
+      btn.dataset.active = 'false'; // ❌ = hidden
+    } else {
+      btn.dataset.active = 'true';  // ✅ = showing
+    }
+  };
+
+  /**
+   * @method initPersonalFilter
+   * @description Setup Personal Chat filter button (✅Personal / ❌Personal)
+   */
+  initPersonalFilter = () => {
+    const btn = document.querySelector('[data-type="personal"]');
+    if (!btn) return;
+
+    // Set initial icon
+    this.updatePersonalFilterUI(btn);
+
+    // Bind click handler
+    btn.addEventListener('click', () => {
+      const current = localStorage.getItem('personalState') || 'false';
+      const next = current === 'true' ? 'false' : 'true';
+      localStorage.setItem('personalState', next);
+      this.updatePersonalFilterUI(btn);
+
+      if (next === 'true') {
+        this.table.hidePersonal();
+      } else {
+        this.table.showPersonal();
+      }
+    });
+  };
+
+  updatePersonalFilterUI = (btn) => {
+    const hidden = localStorage.getItem('personalState') === 'true';
+    if (hidden) {
+      btn.dataset.active = 'false';
+    } else {
+      btn.dataset.active = 'true';
+    }
+  };
+
+  // ===== Bot Filter =====
+  initBotFilter = () => {
+    const btn = document.querySelector('[data-type="bot"]');
+    if (!btn) return;
+    this.updateBotFilterUI(btn);
+    btn.addEventListener('click', () => {
+      const next = localStorage.getItem('botState') === 'true' ? 'false' : 'true';
+      localStorage.setItem('botState', next);
+      this.updateBotFilterUI(btn);
+      next === 'true' ? this.table.hideBot() : this.table.showBot();
+    });
+  };
+
+  updateBotFilterUI = (btn) => {
+    btn.dataset.active = localStorage.getItem('botState') === 'true' ? 'false' : 'true';
+  };
+
+  // ===== Group Filter =====
+  initGroupFilter = () => {
+    const btn = document.querySelector('[data-type="group"]');
+    if (!btn) return;
+    this.updateGroupFilterUI(btn);
+    btn.addEventListener('click', () => {
+      const next = localStorage.getItem('groupState') === 'true' ? 'false' : 'true';
+      localStorage.setItem('groupState', next);
+      this.updateGroupFilterUI(btn);
+      next === 'true' ? this.table.hideGroup() : this.table.showGroup();
+    });
+  };
+
+  updateGroupFilterUI = (btn) => {
+    btn.dataset.active = localStorage.getItem('groupState') === 'true' ? 'false' : 'true';
+  };
+
+  // ===== Channel Filter =====
+  initChannelFilter = () => {
+    const btn = document.querySelector('[data-type="channel"]');
+    if (!btn) return;
+    this.updateChannelFilterUI(btn);
+    btn.addEventListener('click', () => {
+      const next = localStorage.getItem('channelState') === 'true' ? 'false' : 'true';
+      localStorage.setItem('channelState', next);
+      this.updateChannelFilterUI(btn);
+      next === 'true' ? this.table.hideChannel() : this.table.showChannel();
+    });
+  };
+
+  updateChannelFilterUI = (btn) => {
+    btn.dataset.active = localStorage.getItem('channelState') === 'true' ? 'false' : 'true';
   };
 
   /**
@@ -70,15 +202,10 @@ export default class Header {
     this.csvFileInput = fileInput;
   };
 
-  /**
-   * @method handleExportCsv
-   * @description Export folder assignments to CSV
-   */
   handleExportCsv = async () => {
     try {
       const response = await eel.export_csv()();
       if (response.success) {
-        // Create download
         const bom = "\uFEFF";
         const blob = new Blob([bom + response.csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
@@ -96,19 +223,11 @@ export default class Header {
     this.userMenuElement.classList.add("hide");
   };
 
-  /**
-   * @method handleImportCsv
-   * @description Trigger file picker for CSV import
-   */
   handleImportCsv = () => {
     this.csvFileInput.click();
     this.userMenuElement.classList.add("hide");
   };
 
-  /**
-   * @method handleImportFile
-   * @description Handle selected CSV file
-   */
   handleImportFile = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -119,33 +238,23 @@ export default class Header {
       await this.processCsvImport(csvString);
     };
     reader.readAsText(file);
-    // Reset file input
     event.target.value = "";
   };
 
-  /**
-   * @method processCsvImport
-   * @description Validate and import CSV
-   */
   processCsvImport = async (csvString) => {
     try {
-      // First pass: validate without force
       let response = await eel.import_csv(csvString, false)();
 
       if (response.success) {
-        // All good, refresh table
         await this.table.getData();
         return;
       }
 
-      // Check if it's an order mismatch (count matches but order differs)
       if (response.validation && response.validation.count_match && !response.validation.order_match) {
-        // Show popup asking user to continue or cancel
         this.showImportMismatchPopup(csvString);
         return;
       }
 
-      // Other error (count mismatch, etc.)
       console.error("Import failed:", response.error);
       alert(response.error || "Import failed");
     } catch (e) {
@@ -153,15 +262,9 @@ export default class Header {
     }
   };
 
-  /**
-   * @method showImportMismatchPopup
-   * @description Show popup for folder order mismatch
-   */
   showImportMismatchPopup = (csvString) => {
-    // Simple confirm dialog
     const confirmed = confirm("Folder 顺序不一致. 是否继续导入?");
     if (confirmed) {
-      // Retry with force=true
       eel.import_csv(csvString, true)(async (response) => {
         if (response.success) {
           await this.table.getData();
@@ -172,20 +275,7 @@ export default class Header {
     }
   };
 
-  /**
-   * @method applyTranslations
-   * @description Update all translated text in the header
-   */
   applyTranslations() {
-    const hideArchived = document.getElementById("hideArchived");
-    if (hideArchived) {
-      const isHidden =
-        localStorage.getItem("archiveState") === "false";
-      hideArchived.textContent = isHidden
-        ? i18n.t("header.show_archived")
-        : i18n.t("header.hide_archived");
-    }
-
     const reloadChatsList = document.getElementById("reloadChatsList");
     if (reloadChatsList) {
       reloadChatsList.textContent = i18n.t("header.reload");
@@ -196,7 +286,6 @@ export default class Header {
       logout.textContent = i18n.t("header.logout");
     }
 
-    // Update dynamically created CSV menu items
     const exportBtn = this.userMenuElement.querySelector(".csv-export");
     if (exportBtn) {
       exportBtn.textContent = i18n.t("header.export_csv");
@@ -207,33 +296,13 @@ export default class Header {
     }
   }
 
-  /**
-   * @method changeAvatar
-   * @description Change avatar image
-   * @param {String} picture
-   */
   changeAvatar = (picture) => {
     this.avatarContainerElement.querySelector(".header .avatar img").src =
       picture ? picture : "/img/contacts.png";
   };
 
-  /**
-   * @method handleAvatarClick
-   * @description Delegate avatar menu events
-   * @param {Event} event
-   */
   handleAvatarClick = (event) => {
     event.stopPropagation();
-
-    if (JSON.parse(localStorage.getItem("archiveState"))) {
-      const element = this.userMenuElement.querySelector(".hideArchived");
-      element.textContent = i18n.t("header.hide_archived");
-    } else if (
-      JSON.parse(localStorage.getItem("archiveState")) === "false"
-    ) {
-      const element = this.userMenuElement.querySelector(".hideArchived");
-      element.textContent = i18n.t("header.show_archived");
-    }
 
     if (this.userMenuElement.className === "user-menu") {
       this.userMenuElement.classList.add("hide");
@@ -241,9 +310,7 @@ export default class Header {
       this.userMenuElement.classList.remove("hide");
     }
 
-    if (event.target.className === "hideArchived") {
-      this.changeText();
-    } else if (event.target.className === "reloadChatsList") {
+    if (event.target.className === "reloadChatsList") {
       this.reloadChats();
     } else if (event.target.className === "logout") {
       this.logout(event);
@@ -254,11 +321,6 @@ export default class Header {
       "@" + this.data.username;
   };
 
-  /**
-   * @method handleWindowClick
-   * @description Close menu on outside click
-   * @param {Event} event
-   */
   handleWindowClick = (event) => {
     if (
       event.target !== this.avatarContainerElement &&
@@ -270,35 +332,11 @@ export default class Header {
     }
   };
 
-  /**
-   * @method changeText
-   * @description Toggle archive visibility text
-   */
-  changeText() {
-    const element = this.userMenuElement.querySelector(".hideArchived");
-
-    if (localStorage.getItem("archiveState") === "true") {
-      this.table.hideArchive();
-      element.textContent = i18n.t("header.show_archived");
-    } else if (localStorage.getItem("archiveState") === "false") {
-      this.table.showArchive();
-      element.textContent = i18n.t("header.hide_archived");
-    }
-  }
-
-  /**
-   * @method reloadChats
-   * @description Reload chat list
-   */
   reloadChats = () => {
     this.table.updateChats();
     this.userMenuElement.classList.add("hide");
   };
 
-  /**
-   * @method logout
-   * @description Log out
-   */
   logout = () => {
     eel.logout()();
     document.querySelector(".spinner_large").classList.add("hide");

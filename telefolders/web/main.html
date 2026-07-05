@@ -20,13 +20,29 @@
         <img src="img/noncontacts.png" alt="avatar" />
         <div class="user-menu hide">
           <p class="username"></p>
-          <p class="hideArchived" id="hideArchived" data-i18n="header.hide_archived"></p>
           <p class="reloadChatsList" id="reloadChatsList" data-i18n="header.reload"></p>
-
           <p class="logout" data-i18n="header.logout"></p>
         </div>
       </div>
     </header>
+
+    <nav class="filter-bar">
+      <p class="filter-btn" data-type="archived">
+        <span class="filter-icon"></span><span data-i18n="filter.archived">Archived</span>
+      </p>
+      <p class="filter-btn" data-type="personal">
+        <span class="filter-icon"></span><span data-i18n="filter.personal">Personal Chat</span>
+      </p>
+      <p class="filter-btn" data-type="bot">
+        <span class="filter-icon"></span><span data-i18n="filter.bots">Bots</span>
+      </p>
+      <p class="filter-btn" data-type="group">
+        <span class="filter-icon"></span><span data-i18n="filter.group">Groups</span>
+      </p>
+      <p class="filter-btn" data-type="channel">
+        <span class="filter-icon"></span><span data-i18n="filter.channel">Channels</span>
+      </p>
+    </nav>
 
     <main class="main">
       <div class="spinner_large">

@@ -29,7 +29,7 @@ def login_password(phone, password, phone_code_hash):
 
 @eel.expose
 def set_chat_archive(chat_id, archive):
-    print(chat_id, archive)
+    # print(chat_id, archive)
     return telefolders.set_chat_archive(chat_id, archive)
 
 
@@ -47,7 +47,7 @@ def get_user():
 def get_folders():
     import sys
     result = telefolders.get_folders()
-    print(f"[eel] get_folders returned {len(result)} items", file=sys.stderr, flush=True)
+    # print(f"[eel] get_folders returned {len(result)} items", file=sys.stderr, flush=True)
     return result
 
 
@@ -55,7 +55,7 @@ def get_folders():
 def get_all_chats():
     import sys
     result = telefolders.get_all_chats()
-    print(f"[eel] get_all_chats returned {len(result)} items", file=sys.stderr, flush=True)
+    # print(f"[eel] get_all_chats returned {len(result)} items", file=sys.stderr, flush=True)
     return result
 
 

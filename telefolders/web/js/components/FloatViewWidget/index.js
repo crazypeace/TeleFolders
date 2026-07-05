@@ -43,7 +43,7 @@ class FloatView {
     this.container.removeEventListener("click", this.handleClickListener);
     let index = Number(this.chatIndex) + 1;
     const chatsLength = this.table.chats.length;
-    const archiveState = JSON.parse(localStorage.getItem("archiveState"));
+    const archivedHidden = localStorage.getItem("archiveState") === "true";
 
     while (true) {
       if (index >= chatsLength) {
@@ -52,7 +52,7 @@ class FloatView {
 
       let chat = this.table.chats[index];
 
-      if (!archiveState) {
+      if (archivedHidden) {
         if (chat.archived) {
           index = index + 1;
         } else {
@@ -82,7 +82,7 @@ class FloatView {
     this.container.removeEventListener("click", this.handleClickListener);
     let index = Number(this.chatIndex) - 1;
     const chatsLength = this.table.chats.length;
-    const archiveState = JSON.parse(localStorage.getItem("archiveState"));
+    const archivedHidden = localStorage.getItem("archiveState") === "true";
 
     while (true) {
       if (index <= 0) {
@@ -91,7 +91,7 @@ class FloatView {
 
       let chat = this.table.chats[index];
 
-      if (!archiveState) {
+      if (archivedHidden) {
         if (chat.archived) {
           index = index - 1;
         } else {
@@ -145,7 +145,7 @@ class FloatView {
    * @param {Event} event
    */
   click = (event) => {
-    console.log("123");
+    // console.log("123");
     if (event.code === "ArrowRight") {
       this.nextChat();
     } else if (event.code === "ArrowLeft") {
@@ -196,7 +196,7 @@ class FloatView {
     `;
 
     let archiveState = !this.table.chats[this.chatIndex].archived;
-    console.log(archiveState);
+    // console.log(archiveState);
 
     const response = await eel.set_chat_archive(chatId, archiveState)();
 
@@ -381,19 +381,19 @@ class FloatView {
     let response;
 
     if (relation === "include") {
-      console.log("include");
+      // console.log("include");
       if (
         this.table.chats[this.chatIndex].folders.include.includes(
           Number(folderId),
         )
       ) {
-        console.log("false");
+        // console.log("false");
         response = await eel.set_chat_folder_relation(
           Number(chatId),
           Number(folderId),
         )();
       } else {
-        console.log(relation);
+        // console.log(relation);
         response = await eel.set_chat_folder_relation(
           Number(chatId),
           Number(folderId),
@@ -401,7 +401,7 @@ class FloatView {
         )();
       }
     } else if (relation === "pinned") {
-      console.log("pinned");
+      // console.log("pinned");
       if (
         this.table.chats[this.chatIndex].folders.pinned.includes(
           Number(folderId),
@@ -444,7 +444,7 @@ class FloatView {
             .addEventListener("click", addFolderHandler, { once: true });
         }
       } else {
-        console.log(relation);
+        // console.log(relation);
         response = await eel.set_chat_folder_relation(
           Number(chatId),
           Number(folderId),
@@ -452,19 +452,19 @@ class FloatView {
         )();
       }
     } else if (relation === "exclude") {
-      console.log("exclude");
+      // console.log("exclude");
       if (
         this.table.chats[this.chatIndex].folders.exclude.includes(
           Number(folderId),
         )
       ) {
-        console.log("false");
+        // console.log("false");
         response = await eel.set_chat_folder_relation(
           Number(chatId),
           Number(folderId),
         )();
       } else {
-        console.log(relation);
+        // console.log(relation);
         response = await eel.set_chat_folder_relation(
           Number(chatId),
           Number(folderId),
@@ -712,7 +712,7 @@ class FloatView {
         }
       }
 
-      console.log(this.table.chats[this.chatIndex].folders);
+      // console.log(this.table.chats[this.chatIndex].folders);
     }
     if (!response.success) {
       const text =

@@ -16,13 +16,17 @@
   "login.error_title": "An error occurred",
   "login.error_hint": "Try entering your phone number again or try logging in later",
 
-  "header.hide_archived": "Hide archived",
-  "header.show_archived": "Show archived",
   "header.reload": "Refresh chat list",
   "header.logout": "Log out",
 
   "header.export_csv": "Export CSV",
   "header.import_csv": "Import CSV",
+
+  "filter.archived": "Archived",
+  "filter.personal": "Personal Chat",
+  "filter.bots": "Bots",
+  "filter.group": "Groups",
+  "filter.channel": "Channels",
 
   "table.all_chats": "All chats",
   "table.archive": "Archive",

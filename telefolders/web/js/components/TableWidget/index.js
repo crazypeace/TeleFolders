@@ -12,20 +12,83 @@ export default class Table {
    * @returns {Table.instance} singleton
    */
   constructor() {
-    if (
-      JSON.parse(localStorage.getItem("archiveState")) === null ||
-      JSON.parse(localStorage.getItem("archiveState")) === undefined
-    ) {
-      localStorage.setItem("archiveState", true);
-    }
-    this.archiveState =
-      JSON.parse(localStorage.getItem("archiveState")) === true;
-
     if (!Table.instance) {
       Table.instance = this;
     }
-
     return Table.instance;
+  }
+
+  /**
+   * @method hideArchive
+   * @description Hide archived chats from table
+   */
+  hideArchive() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+
+  /**
+   * @method showArchive
+   * @description Show archived chats in table
+   */
+  showArchive() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+
+  /**
+   * @method hidePersonal
+   * @description Hide personal chats from table
+   */
+  hidePersonal() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+
+  /**
+   * @method showPersonal
+   * @description Show personal chats in table
+   */
+  showPersonal() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+
+  hideBot() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+  showBot() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+
+  hideGroup() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+  showGroup() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+
+  hideChannel() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
+  }
+  showChannel() {
+    if (this.chats && this.folders) {
+      this.drawChats();
+    }
   }
 
   /**
@@ -38,11 +101,6 @@ export default class Table {
 
     this.chats = await eel.get_all_chats()();
     this.folders = await eel.get_folders()();
-
-    console.log("chats count: ", this.chats.length);
-    console.log("chats: ", this.chats);
-    console.log("folders count: ", this.folders.length);
-    console.log("folders: ", this.folders);
 
     this.drawHeader();
     this.drawChats();
@@ -131,7 +189,7 @@ export default class Table {
     const doneBtn = document.getElementById("popup-done");
     const cancelBtn = document.getElementById("popup-cancle");
     const folderInput = document.getElementById("folder-name");
-    const table = this; // capture Table instance
+    const table = this;
 
     function addFolderHandler() {
       const title = folderInput.value.trim();
@@ -163,7 +221,26 @@ export default class Table {
    * @description Draw chat table
    */
   async drawChats() {
-    const chats = this.chats;
+    // Filter chats based on active filter states (following header.hide_archived pattern)
+    const allChats = this.chats;
+    let chats = allChats;
+
+    if (localStorage.getItem('archiveState') === 'true') {
+      chats = chats.filter(c => !c.archived);
+    }
+    if (localStorage.getItem('personalState') === 'true') {
+      chats = chats.filter(c => !c.is_private_user);
+    }
+    if (localStorage.getItem('botState') === 'true') {
+      chats = chats.filter(c => !c.is_bot);
+    }
+    if (localStorage.getItem('groupState') === 'true') {
+      chats = chats.filter(c => !c.is_group);
+    }
+    if (localStorage.getItem('channelState') === 'true') {
+      chats = chats.filter(c => !c.is_channel);
+    }
+
     const folders = this.folders;
     const tbodyElement = document.querySelector(
       ".table-container .table tbody",
@@ -230,58 +307,11 @@ export default class Table {
     // Draw chat rows
     chats.map((value, index) => {
       const id = Number(localStorage.getItem("user-id"));
-      const archiveState =
-        localStorage.getItem("archiveState") === "true" ? true : false;
-
       const imagePath = value.archived
         ? "/img/svg/plus-black.svg"
         : "/img/svg/plus-white.svg";
 
-      if (!archiveState) {
-        if (value.archived) {
-        } else {
-          html += /* html */ `
-                <tr
-                  data-chat-index="${index}"
-                  data-archive-state="${value.archived}"
-                  data-chat-id="${value.chat_id}"
-                >
-                  <th
-                    data-chat-id="${value.chat_id}"
-                    class="th title"
-                  >
-                    <div class='wrapper'>
-                      <p class="title">
-                        ${id === value.chat_id ? i18n.t("table.favorites") : value.title}
-                      </p>
-                    </div>
-                  </th>
-                  <td>
-                    <div class="buttons">
-                      <button class="button archive">
-                        <img src="${imagePath}"/>
-                      </button>
-                    </div>
-                  </td>
-                  ${folders
-                    .map((folder) => {
-                      return /* html */ `
-                      <td
-                        data-chat-id="${value.chat_id}"
-                        data-folder-id="${folder.folder_id}"
-                      >
-                        <div class="buttons">
-                          ${this.setChatsButtons(folder.folder_id, value)}
-                        </div>
-                      </td>
-                    `;
-                    })
-                    .join("")}
-                </tr>
-              `;
-        }
-      } else {
-        html += /* html */ `
+      html += /* html */ `
               <tr
                 data-chat-index="${index}"
                 data-archive-state="${value.archived}"
@@ -320,7 +350,6 @@ export default class Table {
                   .join("")}
               </tr>
             `;
-      }
     });
 
     tbodyElement.innerHTML = html;
@@ -335,10 +364,8 @@ export default class Table {
    * @param {Event} event
    */
   handleClick = (event) => {
-    // Find the actual button if user clicked img inside it
     const button = event.target.closest("button");
     const target = button || event.target;
-    console.log("[handleClick] target:", target.className, "button:", button?.className, "event.target:", event.target.className);
     
     if (target.className === "button exclude") {
       this.setChatRelation(target, null);
@@ -499,234 +526,135 @@ export default class Table {
         if (includeIndex !== -1) {
           this.chats[chatIndex].folders.include.splice(includeIndex, 1);
         }
-
-        if (!this.chats[chatIndex].folders.pinned.includes(Number(folderId))) {
-          this.chats[chatIndex].folders.pinned.push(Number(folderId));
-        }
       } else if (relation === "exclude") {
         imagePath = "/img/svg/minus-black.svg";
         event.classList.remove("pinned");
         event.classList.add("exclude");
 
-        const pinnedIndex = this.chats[chatIndex].folders.pinned.indexOf(
+        const pinIndex = this.chats[chatIndex].folders.pinned.indexOf(
           Number(folderId),
         );
-        if (pinnedIndex !== -1) {
-          this.chats[chatIndex].folders.pinned.splice(pinnedIndex, 1);
-        }
-
-        if (!this.chats[chatIndex].folders.exclude.includes(Number(folderId))) {
-          this.chats[chatIndex].folders.exclude.push(Number(folderId));
+        if (pinIndex !== -1) {
+          this.chats[chatIndex].folders.pinned.splice(pinIndex, 1);
         }
       } else if (relation === null) {
         imagePath = "/img/svg/plus-white.svg";
         event.classList.remove("exclude");
+        event.classList.remove("pinned");
+        event.classList.remove("include");
         event.classList.add("null");
-
-        const excludeIndex = this.chats[chatIndex].folders.exclude.indexOf(
-          Number(folderId),
-        );
-        if (excludeIndex !== -1) {
-          this.chats[chatIndex].folders.exclude.splice(excludeIndex, 1);
-        }
       }
 
       event.innerHTML = `
-        <img src='${imagePath}' />
+        <img src="${imagePath}" />
       `;
-    }
-    if (!response.success) {
-      const text =
-        response.error_code === "folder_empty_error"
-          ? i18n.t("error.folder_empty")
-          : i18n.t("error.occurred");
-      const popupComponent = new Popup(/* html */ `
+    } else {
+      event.innerHTML = `
+        <img src="/img/svg/plus-white.svg" />
+      `;
+      if (response.error_code === "folder_empty_error") {
+        const popup = new Popup(/* html */ `
           <div class='popup-content'>
             <h2>${i18n.t("error.occurred")}</h2>
-            <p>${text}</p>
+            <p>${i18n.t("error.folder_empty")}</p>
             <div class='buttons'>
-              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
+              <button id='popup-done'>${i18n.t("button.ok")}</button>
             </div>
           </div>
         `);
-
-      popupComponent.show();
-
-      function addFolderHandler() {
-        popupComponent.close();
+        popup.show();
+        document
+          .getElementById("popup-done")
+          .addEventListener("click", () => popup.close(), { once: true });
       }
-
-      document
-        .getElementById("popup-done")
-        .addEventListener("click", addFolderHandler, { once: true });
+      console.error("setChatRelation error:", response);
     }
   };
 
   /**
    * @method setFlagRelation
-   * @description Toggle folder flag
-   * @param {Event} event
+   * @description Update folder flags
+   * @param {HTMLElement} event
+   * @param {String} value
    */
   setFlagRelation = async (event) => {
-    event.innerHTML = `
-    <div class="buttons flug">
-      <div class="spinner">
-        <div class="block"></div>
-      </div>
-    </div>
-    `;
+    const flag = event.getAttribute("data-flag");
+    const prevState = event.getAttribute("data-flag-state");
+    const folderId = event.getAttribute("data-folder-id");
 
-    let folderId = event.getAttribute("data-folder-id");
-    let flag = event.getAttribute("data-flag");
-    let value = JSON.parse(event.getAttribute("data-flag-state"));
-    let response = await eel.set_folder_flag(Number(folderId), flag, !value)();
+    const nextState =
+      prevState === "true" || prevState === true ? false : true;
 
-    if (response.success === true) {
-      event.setAttribute("data-flag-state", !value);
-      let html = [
-        "exclude_muted",
-        "exclude_read",
-        "exclude_archived",
-      ].includes(flag);
+    const response = await eel.set_folder_flag(folderId, flag, nextState)();
+    if (response.success) {
+      event.setAttribute("data-flag-state", String(nextState));
+      const flagBtn = event.querySelector("button");
+      const flagImg = event.querySelector("img");
 
-      if (value) {
-        if (html) {
-          event.innerHTML = /* html */ `
-          <div class='buttons flag'>
-            <button class='button flag'>
-              <img src="/img/svg/minus-white.svg" />
-            </button>
-          </div>
-        `;
-        } else {
-          event.innerHTML = /* html */ `
-          <div class='buttons flag'>
-            <button class='button flag'>
-              <img src="/img/svg/plus-white.svg" />
-            </button>
-          </div>
-          `;
-        }
+      if (flag === "exclude_archived") {
+        flagImg.src = nextState
+          ? "/img/svg/minus-black.svg"
+          : "/img/svg/minus-white.svg";
+      } else if (flag === "exclude_muted") {
+        flagImg.src = nextState
+          ? "/img/svg/minus-black.svg"
+          : "/img/svg/minus-white.svg";
+      } else if (flag === "exclude_read") {
+        flagImg.src = nextState
+          ? "/img/svg/minus-black.svg"
+          : "/img/svg/minus-white.svg";
       } else {
-        if (html) {
-          event.innerHTML = /* html */ `
-          <div class='buttons flag'>
-            <button class='button flag'>
-              <img src="/img/svg/minus-black.svg" />
-            </button>
-          </div>
-        `;
-        } else {
-          event.innerHTML = /* html */ `
-          <div class='buttons flag'>
-            <button class='button flag'>
-              <img src="/img/svg/plus-black.svg" />
-            </button>
-          </div>
-        `;
-        }
+        flagImg.src = nextState
+          ? "/img/svg/plus-black.svg"
+          : "/img/svg/plus-white.svg";
       }
-    }
-
-    if (!response.success) {
-      const text =
-        response.error_code === "folder_empty_error"
-          ? i18n.t("error.folder_empty")
-          : i18n.t("error.occurred");
-      const popupComponent = new Popup(/* html */ `
-          <div class='popup-content'>
-            <h2>${i18n.t("error.occurred")}</h2>
-            <p>${text}</p>
-            <div class='buttons'>
-              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
-            </div>
-          </div>
-        `);
-
-      popupComponent.show();
-
-      function addFolderHandler() {
-        popupComponent.close();
-      }
-
-      document
-        .getElementById("popup-done")
-        .addEventListener("click", addFolderHandler, { once: true });
+      flagBtn.innerHTML = `<img src="${flagImg.src}" />`;
+    } else {
+      console.error("setFlagRelation error:", response);
     }
   };
 
   /**
    * @method setArchiveRelation
-   * @description Toggle chat archive state
-   * @param {Event} event
+   * @description Toggle chat archive status
    */
-  setArchiveRelation = async (event) => {
-    event.innerHTML = `
+  setArchiveRelation = async (target) => {
+    const img = target.querySelector("img");
+    img.remove();
+
+    target.innerHTML = `
       <div class="spinner">
         <div class="block"></div>
       </div>
     `;
 
-    let trElement = event.parentElement.parentElement.parentElement;
-    let chatId = Number(trElement.getAttribute("data-chat-id"));
-    let value = JSON.parse(trElement.getAttribute("data-archive-state"));
+    const tdElement = target.parentElement.parentElement;
+    const trElement = tdElement.parentElement;
 
-    let response = await eel.set_chat_archive(Number(chatId), !value)();
+    const chatId = tdElement.getAttribute("data-chat-id");
+    const chatIndex = trElement.getAttribute("data-chat-index");
 
-    let foundChatIndex = this.chats.findIndex((chat) => {
-      return chat.chat_id === chatId;
-    });
+    const currentState = this.chats[chatIndex].archived;
+    const newState = !currentState;
 
-    if (response.success) {
-      value = response.current_value;
-      this.chats[foundChatIndex].archived = value;
-      trElement.setAttribute("data-archive-state", value);
-      let imagePath = "";
+    const response = await eel.set_chat_archive(chatId, newState)();
 
-      if (value) {
-        imagePath = "/img/svg/plus-black.svg";
-      } else {
-        imagePath = "/img/svg/plus-white.svg";
-      }
-
-      if (value && !this.archiveState) {
-        trElement.style.display = "none";
-      }
-
-      event.innerHTML = /* html */ `
-          <img src="${imagePath}" />
-        `;
-    } else {
-      value = response.current_value;
-      this.chats[foundChatIndex].archived = value;
-      trElement.setAttribute("data-archive-state", value);
-      let imagePath = value
+    if (response.success || response.current_value === newState) {
+      this.chats[chatIndex].archived = newState;
+      const imagePath = newState
         ? "/img/svg/plus-black.svg"
         : "/img/svg/plus-white.svg";
-      event.innerHTML = /* html */ `
-          <img src="${imagePath}" />
-        `;
+      target.innerHTML = `
+        <img src="${imagePath}" />
+      `;
+    } else {
+      const imagePath = currentState
+        ? "/img/svg/plus-black.svg"
+        : "/img/svg/plus-white.svg";
+      target.innerHTML = `
+        <img src="${imagePath}" />
+      `;
     }
-  };
-
-  /**
-   * @method showArchive
-   * @description Show archived chats
-   */
-  showArchive = () => {
-    localStorage.setItem("archiveState", true);
-    this.archiveState = true;
-    this.drawChats();
-  };
-
-  /**
-   * @method hideArchive
-   * @description Hide archived chats
-   */
-  hideArchive = () => {
-    localStorage.setItem("archiveState", false);
-    this.archiveState = false;
-    this.drawChats();
   };
 
   /**

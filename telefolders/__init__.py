@@ -1,1 +1,1 @@
-from .__main__ import main
+# Package init - intentionally empty

@@ -305,6 +305,7 @@ class Telefolders:
                         "is_group": is_group,
                         "is_channel": is_channel,
                         "is_bot": is_bot,
+                        "is_private_user": is_private_user,
                         "is_muted": is_muted,
                         "is_read": is_read,
                         "folders": chats_with_folders.get(
