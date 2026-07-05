@@ -240,8 +240,8 @@ export default class Header {
 
     // Step 3: Generate frontend CSV
     const frontendCSV = table.generateCSV(allChats, folders);
-    const feLines = frontendCSV.replace(/\r\n/g, "\n").split("\n");
-    console.log("前端 CSV lines:", feLines.length, "(including header + trailing empty)");
+    const feLinesArr = frontendCSV.replace(/\r\n/g, "\n").split("\n");
+    console.log("前端 CSV lines:", feLinesArr.length, "(including header + trailing empty)");
 
     // Step 4: Get backend CSV
     const response = await eel.export_csv()();
@@ -251,57 +251,75 @@ export default class Header {
     }
 
     const backendCSV = response.csv;
-    const beLines = backendCSV.replace(/\r\n/g, "\n").split("\n");
-    console.log("后端 CSV lines:", beLines.length, "(including header + trailing empty)");
+    const beLinesArr = backendCSV.replace(/\r\n/g, "\n").split("\n");
+    console.log("后端 CSV lines:", beLinesArr.length, "(including header + trailing empty)");
 
-    // Step 5: Compare
-    if (frontendCSV === backendCSV) {
-      console.log("✅ 完全一致！前端和后端CSV完全相同");
-      return;
-    }
+    // Step 5: Compare using chat_id sets (order-independent)
+    // (feLinesArr / beLinesArr already computed above)
 
-    // Step 6: Extract chat_ids from both
-    function extractChatIds(lines) {
-      const ids = [];
+    // Build map: chat_id → full CSV line
+    function buildRowMap(lines) {
+      const map = new Map();
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
-        // chat_id is the first column (before first comma, or inside quotes)
+        // chat_id is the first column: may be quoted (if negative with comma) or raw
         const match = line.match(/^"?([^",]+)"?,/);
-        if (match) ids.push(match[1]);
+        if (!match) continue;
+        map.set(match[1], line);
       }
-      return ids;
+      return map;
     }
 
-    const feIds = extractChatIds(feLines);
-    const beIds = extractChatIds(beLines);
+    const feMap = buildRowMap(feLinesArr);
+    const beMap = buildRowMap(beLinesArr);
 
-    const feSet = new Set(feIds);
-    const beSet = new Set(beIds);
+    // Check header
+    const headerMatch = feLinesArr[0] === beLinesArr[0];
+    console.log("Header:", headerMatch ? "一致" : "不一致");
 
-    const onlyInBe = beIds.filter(id => !feSet.has(id));
-    const onlyInFe = feIds.filter(id => !beSet.has(id));
+    // Compare row count
+    if (feMap.size !== beMap.size) {
+      console.log(`chat 数量不同: 前端 ${feMap.size} vs 后端 ${beMap.size}`);
+    }
 
-    console.log("---");
-    console.log("前端 chat_ids 数量:", feIds.length);
-    console.log("后端 chat_ids 数量:", beIds.length);
-    console.log("后端多出 chat_id:", onlyInBe);
-    console.log("前端多出 chat_id:", onlyInFe);
-
-    // Show details of first differing row
-    console.log("---");
-    console.log("Header 对比:");
-    console.log("  前端:", JSON.stringify(feLines[0]));
-    console.log("  后端:", JSON.stringify(beLines[0]));
-
-    // Find first data row that differs
-    for (let i = 1; i < Math.max(feLines.length, beLines.length); i++) {
-      if (feLines[i] !== beLines[i]) {
-        console.log(`第一个差异第 ${i} 行:`);
-        console.log("  前端:", JSON.stringify(feLines[i]));
-        console.log("  后端:", JSON.stringify(beLines[i]));
-        break;
+    // Check: all frontend rows exist and match in backend
+    let matchCount = 0;
+    let diffCount = 0;
+    for (const [id, feLine] of feMap) {
+      const beLine = beMap.get(id);
+      if (beLine === undefined) {
+        console.log(`  chat_id ${id}: 前端有在, 后端没有!`);
+        diffCount++;
+      } else if (feLine !== beLine) {
+        console.log(`  chat_id ${id}: 行内容不同`);
+        console.log(`    前端: ${JSON.stringify(feLine)}`);
+        console.log(`    后端: ${JSON.stringify(beLine)}`);
+        diffCount++;
+      } else {
+        matchCount++;
       }
+    }
+
+    // Check backend-only ids
+    let backendOnlyCount = 0;
+    for (const id of beMap.keys()) {
+      if (!feMap.has(id)) {
+        console.log(`  chat_id ${id}: 后端有, 前端没有!`);
+        backendOnlyCount++;
+      }
+    }
+
+    console.log("---");
+    console.log(`📊 结果汇总:`);
+    console.log(`  行数(含header+空行): 前端 ${feLinesArr.length} vs 后端 ${beLinesArr.length}`);
+    console.log(`  chat 数量: 前端 ${feMap.size} vs 后端 ${beMap.size}`);
+    console.log(`  完全匹配: ${matchCount}`);
+    console.log(`  内容不同: ${diffCount}`);
+    console.log(`  后端多出: ${backendOnlyCount}`);
+
+    if (diffCount === 0 && backendOnlyCount === 0 && headerMatch) {
+      console.log("✅ 内容完全一致! (不考虑行顺序)");
     }
   };
 
