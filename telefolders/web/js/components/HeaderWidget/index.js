@@ -216,111 +216,26 @@ export default class Header {
    */
   handleCsvCompare = async () => {
     this.userMenuElement.classList.add("hide");
-    console.clear();
-    console.log("=== CSV Debug Compare (No Filter) ===");
+    console.log("=== CSV Export (Backend Only) ===");
 
-    // Step 1: Reset all filters to ensure no filter is active
-    const types = ["archived", "personal", "bot", "group", "channel"];
-    types.forEach(t => localStorage.removeItem(t + "State"));
-
-    // Step 2: Wait for table to redraw with all chats
-    await new Promise(r => setTimeout(r, 500));
-
-    const table = new Table();
-    const allChats = table.chats;
-    const folders = table.folders;
-
-    console.log("前端 chats 数量:", allChats ? allChats.length : "(no data)");
-    console.log("前端 folders 数量:", folders ? folders.length : "(no data)");
-
-    if (!allChats || !folders) {
-      console.error("ERROR: chats or folders not loaded. Try again in a moment.");
-      return;
-    }
-
-    // Step 3: Generate frontend CSV
-    const frontendCSV = table.generateCSV(allChats, folders);
-    const feLinesArr = frontendCSV.replace(/\r\n/g, "\n").split("\n");
-    console.log("前端 CSV lines:", feLinesArr.length, "(including header + trailing empty)");
-
-    // Step 4: Get backend CSV
     const response = await eel.export_csv()();
     if (!response.success) {
-      console.error("Backend export failed:", response.error);
+      console.error("Export failed:", response.error);
       return;
     }
 
-    const backendCSV = response.csv;
-    const beLinesArr = backendCSV.replace(/\r\n/g, "\n").split("\n");
-    console.log("后端 CSV lines:", beLinesArr.length, "(including header + trailing empty)");
+    const bom = "﻿";
+    const blob = new Blob([bom + response.csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "telefolders_export.csv";
+    link.click();
+    URL.revokeObjectURL(url);
 
-    // Step 5: Compare using chat_id sets (order-independent)
-    // (feLinesArr / beLinesArr already computed above)
-
-    // Build map: chat_id → full CSV line
-    function buildRowMap(lines) {
-      const map = new Map();
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        // chat_id is the first column: may be quoted (if negative with comma) or raw
-        const match = line.match(/^"?([^",]+)"?,/);
-        if (!match) continue;
-        map.set(match[1], line);
-      }
-      return map;
-    }
-
-    const feMap = buildRowMap(feLinesArr);
-    const beMap = buildRowMap(beLinesArr);
-
-    // Check header
-    const headerMatch = feLinesArr[0] === beLinesArr[0];
-    console.log("Header:", headerMatch ? "一致" : "不一致");
-
-    // Compare row count
-    if (feMap.size !== beMap.size) {
-      console.log(`chat 数量不同: 前端 ${feMap.size} vs 后端 ${beMap.size}`);
-    }
-
-    // Check: all frontend rows exist and match in backend
-    let matchCount = 0;
-    let diffCount = 0;
-    for (const [id, feLine] of feMap) {
-      const beLine = beMap.get(id);
-      if (beLine === undefined) {
-        console.log(`  chat_id ${id}: 前端有在, 后端没有!`);
-        diffCount++;
-      } else if (feLine !== beLine) {
-        console.log(`  chat_id ${id}: 行内容不同`);
-        console.log(`    前端: ${JSON.stringify(feLine)}`);
-        console.log(`    后端: ${JSON.stringify(beLine)}`);
-        diffCount++;
-      } else {
-        matchCount++;
-      }
-    }
-
-    // Check backend-only ids
-    let backendOnlyCount = 0;
-    for (const id of beMap.keys()) {
-      if (!feMap.has(id)) {
-        console.log(`  chat_id ${id}: 后端有, 前端没有!`);
-        backendOnlyCount++;
-      }
-    }
-
-    console.log("---");
-    console.log(`📊 结果汇总:`);
-    console.log(`  行数(含header+空行): 前端 ${feLinesArr.length} vs 后端 ${beLinesArr.length}`);
-    console.log(`  chat 数量: 前端 ${feMap.size} vs 后端 ${beMap.size}`);
-    console.log(`  完全匹配: ${matchCount}`);
-    console.log(`  内容不同: ${diffCount}`);
-    console.log(`  后端多出: ${backendOnlyCount}`);
-
-    if (diffCount === 0 && backendOnlyCount === 0 && headerMatch) {
-      console.log("✅ 内容完全一致! (不考虑行顺序)");
-    }
+    console.log("✅ CSV exported and downloaded");
   };
 
   handleExportCsv = async () => {
