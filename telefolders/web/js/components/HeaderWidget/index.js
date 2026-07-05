@@ -204,19 +204,59 @@ export default class Header {
 
   handleExportCsv = async () => {
     try {
+      const table = new Table();
+
+      // 前端生成 CSV（与表格中过滤后的内容一致）
+      const filteredChats = table.getFilteredChats();
+      const folders = table.folders;
+      const frontendCSV = table.generateCSV(filteredChats, folders);
+      const bom = "﻿";
+
+      // 对比验证：后端导出全量 CSV，仅用于对比（不影响下载内容）
       const response = await eel.export_csv()();
       if (response.success) {
-        const bom = "\uFEFF";
-        const blob = new Blob([bom + response.csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "telefolders_export.csv";
-        link.click();
-        URL.revokeObjectURL(url);
-      } else {
-        console.error("Export failed:", response.error);
+        const backendCSV = response.csv;
+
+        // Normalize line endings before comparison
+        const feNorm = frontendCSV.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+        const beNorm = backendCSV.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+        // Filtered chat counts
+        const feLines = feNorm.split("\n");
+        const beLines = beNorm.split("\n");
+
+        console.log(
+          `[CSV Export] 前端行数: ${feLines.length}, 后端行数: ${beLines.length}`
+        );
+
+        if (feNorm === beNorm) {
+          console.log("✅ 前后端 CSV 完全一致 — 过滤器未生效或全量匹配");
+        } else {
+          console.warn(
+            `⚠️ 前后端 CSV 不一致（预期: 过滤器生效）— 前端 ${feLines.length} 行 vs 后端 ${beLines.length} 行`
+          );
+          // 打印前5行对比
+          for (let i = 0; i < Math.max(feLines.length, beLines.length) && i < 8; i++) {
+            if (feLines[i] !== beLines[i]) {
+              console.log(`第 ${i} 行差异:`);
+              console.log("  前端:", JSON.stringify(feLines[i]));
+              console.log("  后端:", JSON.stringify(beLines[i]));
+              break;
+            }
+          }
+        }
       }
+
+      // 下载前端生成的版本（已受过滤器约束）
+      const blob = new Blob([bom + frontendCSV], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "telefolders_export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Export error:", e);
     }

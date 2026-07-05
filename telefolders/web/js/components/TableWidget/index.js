@@ -217,13 +217,13 @@ export default class Table {
   };
 
   /**
-   * @method drawChats
-   * @description Draw chat table
+   * @method getFilteredChats
+   * @description Return chats after applying all active filter states
+   * @returns {Array} filtered chats
    */
-  async drawChats() {
-    // Filter chats based on active filter states (following header.hide_archived pattern)
-    const allChats = this.chats;
-    let chats = allChats;
+  getFilteredChats() {
+    let chats = this.chats;
+    if (!chats) return [];
 
     if (localStorage.getItem('archiveState') === 'true') {
       chats = chats.filter(c => !c.archived);
@@ -240,6 +240,59 @@ export default class Table {
     if (localStorage.getItem('channelState') === 'true') {
       chats = chats.filter(c => !c.is_channel);
     }
+    return chats;
+  }
+
+  /**
+   * @method _escapeCSVField
+   * @description Escape a single CSV field (Python csv.writer QUOTE_MINIMAL compatible)
+   * @param {*} value
+   * @returns {String}
+   */
+  _escapeCSVField(value) {
+    const s = String(value ?? '');
+    if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  /**
+   * @method generateCSV
+   * @description Generate CSV text from chats and folders (frontend-side)
+   * @param {Array} chats - list of chat objects
+   * @param {Array} folders - list of folder objects
+   * @returns {String} CSV text (CRLF line endings)
+   */
+  generateCSV(chats, folders) {
+    const lines = [];
+
+    // Header: chat_id, chat_name, folder1, folder2, ...
+    const header = ['chat_id', 'chat_name', ...folders.map(f => f.folder_title)];
+    lines.push(header.map(v => this._escapeCSVField(v)).join(','));
+
+    // Data rows
+    for (const chat of chats) {
+      const row = [chat.chat_id, chat.title];
+      for (const folder of folders) {
+        const fid = folder.folder_id;
+        if (chat.folders.include.includes(fid)) row.push('include');
+        else if (chat.folders.pinned.includes(fid)) row.push('pinned');
+        else if (chat.folders.exclude.includes(fid)) row.push('exclude');
+        else row.push('empty');
+      }
+      lines.push(row.map(v => this._escapeCSVField(v)).join(','));
+    }
+
+    return lines.join('\r\n');
+  }
+
+  /**
+   * @method drawChats
+   * @description Draw chat table
+   */
+  async drawChats() {
+    const chats = this.getFilteredChats();
 
     const folders = this.folders;
     const tbodyElement = document.querySelector(
