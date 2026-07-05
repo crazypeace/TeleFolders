@@ -240,7 +240,7 @@ export default class Table {
     if (localStorage.getItem('channelState') === 'true') {
       chats = chats.filter(c => !c.is_channel);
     }
-    return chats;
+    return chats.sort((a, b) => a.chat_id - b.chat_id);
   }
 
   /**
