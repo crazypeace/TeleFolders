@@ -390,10 +390,11 @@ body .app main.main .login .login-form button:active {
 }
 body .app main.main .table-container {
   width: 100%;
-  height: calc(100dvh - 6rem);
   overflow-x: auto;
+  overflow-y: auto;
   border-left: 1px black solid;
   border-top: 1px black solid;
+  flex: 1;
 }
 body .app main.main .table-container .table {
   position: relative;
@@ -558,10 +559,11 @@ body .app main.main .table-container .table button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.3rem 0;
+  padding: 0.3rem 0.5rem;
   border-bottom: 1px solid #ddd;
   overflow-x: auto;
   scrollbar-width: none; /* Firefox */
+  flex-shrink: 0;
 }
 .filter-bar::-webkit-scrollbar {
   display: none; /* Chrome/Safari */
