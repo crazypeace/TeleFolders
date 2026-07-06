@@ -684,7 +684,7 @@ export default class Table {
     const tdElement = target.parentElement.parentElement;
     const trElement = tdElement.parentElement;
 
-    const chatId = tdElement.getAttribute("data-chat-id");
+    const chatId = trElement.getAttribute("data-chat-id");
     const chatIndex = trElement.getAttribute("data-chat-index");
 
     const currentState = this.chats[chatIndex].archived;
