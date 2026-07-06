@@ -14,7 +14,10 @@
 ### 2. 创建对话分组 Folder
 - 界面 `+` 按钮弹出对话框，输入名称即可创建新的 Telegram 对话分组 Folder
 
-### 3. CSV 导入 / 导出
+### 3. 设置组合过滤器
+- archived, personal, bot, group, channel 过滤器
+- 
+### 4. CSV 导入 / 导出
 - **导出**: 将所有聊天Dialog与对话分组Folder的关系导出为 CSV，采用「宽格式」——每行一个聊天，每列一个Folder。
 - **导入**: 从 CSV 恢复Folder配置。只修改有变更的项，跳过不变的项，减少不必要的 API 调用
 - **状态缩写**: CSV 中支持 `I`/`P`/`X`/`N` 缩写（对应 include/pinned/exclude/empty），大小写不敏感
