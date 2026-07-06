@@ -620,7 +620,24 @@ export default class Table {
           .getElementById("popup-done")
           .addEventListener("click", () => popup.close(), { once: true });
       }
-      console.error("setChatRelation error:", response);
+    }
+    if (!response.success) {
+      const text = response.error_code === "folder_empty_error"
+        ? i18n.t("error.folder_empty")
+        : i18n.t("error.occurred");
+      const popupComponent = new Popup(/* html */ `
+          <div class='popup-content'>
+            <h2>${i18n.t("error.occurred")}</h2>
+            <p>${text}</p>
+            <div class='buttons'>
+              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
+            </div>
+          </div>
+        `);
+      popupComponent.show();
+      document
+        .getElementById("popup-done")
+        .addEventListener("click", () => popupComponent.close(), { once: true });
     }
   };
 
@@ -662,51 +679,75 @@ export default class Table {
           : "/img/svg/plus-white.svg";
       }
       flagBtn.innerHTML = `<img src="${flagImg.src}" />`;
-    } else {
-      console.error("setFlagRelation error:", response);
+    }
+
+    if (!response.success) {
+      const text = response.error_code === "folder_empty_error"
+        ? i18n.t("error.folder_empty")
+        : i18n.t("error.occurred");
+      const popupComponent = new Popup(/* html */ `
+          <div class='popup-content'>
+            <h2>${i18n.t("error.occurred")}</h2>
+            <p>${text}</p>
+            <div class='buttons'>
+              <button id='popup-done'>${i18n.t("button.ok_upper")}</button>
+            </div>
+          </div>
+        `);
+      popupComponent.show();
+      document
+        .getElementById("popup-done")
+        .addEventListener("click", () => popupComponent.close(), { once: true });
     }
   };
 
   /**
    * @method setArchiveRelation
-   * @description Toggle chat archive status
+   * @description Toggle chat archive state
+   * @param {Event} event
    */
-  setArchiveRelation = async (target) => {
-    const img = target.querySelector("img");
+  setArchiveRelation = async (event) => {
+    const img = event.querySelector("img");
     img.remove();
 
-    target.innerHTML = `
+    event.innerHTML = `
       <div class="spinner">
         <div class="block"></div>
       </div>
     `;
 
-    const tdElement = target.parentElement.parentElement;
-    const trElement = tdElement.parentElement;
+    let trElement = event.parentElement.parentElement.parentElement;
+    let chatId = Number(trElement.getAttribute("data-chat-id"));
+    let value = JSON.parse(trElement.getAttribute("data-archive-state"));
 
-    const chatId = trElement.getAttribute("data-chat-id");
-    const chatIndex = trElement.getAttribute("data-chat-index");
+    let response = await eel.set_chat_archive(Number(chatId), !value)();
 
-    const currentState = this.chats[chatIndex].archived;
-    const newState = !currentState;
+    let foundChatIndex = this.chats.findIndex((chat) => {
+      return chat.chat_id === chatId;
+    });
 
-    const response = await eel.set_chat_archive(chatId, newState)();
+    this.chats[foundChatIndex].archived = response.current_value;
+    trElement.setAttribute("data-archive-state", response.current_value);
 
-    if (response.success || response.current_value === newState) {
-      this.chats[chatIndex].archived = newState;
-      const imagePath = newState
-        ? "/img/svg/plus-black.svg"
-        : "/img/svg/plus-white.svg";
-      target.innerHTML = `
-        <img src="${imagePath}" />
-      `;
+    if (response.success) {
+      value = response.current_value;
+      let imagePath = "";
+      if (value) {
+        imagePath = "/img/svg/plus-black.svg";
+      } else {
+        imagePath = "/img/svg/plus-white.svg";
+      }
+      event.innerHTML = `
+          <img src="${imagePath}" />
+        `;
     } else {
-      const imagePath = currentState
+      value = response.current_value;
+      let imagePath = value
         ? "/img/svg/plus-black.svg"
         : "/img/svg/plus-white.svg";
-      target.innerHTML = `
-        <img src="${imagePath}" />
-      `;
+      event.innerHTML = `
+          <img src="${imagePath}" />
+        `;
     }
   };
 
