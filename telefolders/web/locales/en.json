@@ -21,6 +21,7 @@
 
   "header.export_csv": "Export CSV",
   "header.import_csv": "Import CSV",
+  "header.export_csv_backend": "Export CSV by Backend",
 
   "filter.archived": "Archived",
   "filter.personal": "Personal Chat",

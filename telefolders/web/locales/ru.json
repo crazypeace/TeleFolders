@@ -23,6 +23,7 @@
 
   "header.export_csv": "Экспорт CSV",
   "header.import_csv": "Импорт CSV",
+  "header.export_csv_backend": "Экспорт CSV (бэкенд)",
 
   "table.all_chats": "Все чаты",
   "table.archive": "Архив",

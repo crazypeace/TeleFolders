@@ -203,20 +203,20 @@ export default class Header {
 
     // Debug: CSV Compare Test
     const compareBtn = document.createElement("p");
-    compareBtn.className = "csv-compare-test";
-    compareBtn.textContent = "🔍 CSV Debug Compare";
-    compareBtn.style.cssText = "color:#f39c12;font-weight:bold;border-top:1px solid #555;margin-top:4px;padding-top:4px;";
+    compareBtn.className = "csv-export-backend";
+    compareBtn.setAttribute("data-i18n", "header.export_csv_backend");
+    compareBtn.textContent = "Export CSV by Backend";
     compareBtn.addEventListener("click", this.handleCsvCompare);
     userMenu.appendChild(compareBtn);
   };
 
   /**
    * @method handleCsvCompare
-   * @description Compare frontend vs backend CSV to find exact differences
+   * @description Export CSV via backend (no frontend filtering)
    */
   handleCsvCompare = async () => {
     this.userMenuElement.classList.add("hide");
-    console.log("=== CSV Export (Backend Only) ===");
+    console.log("=== CSV Export (Backend) ===");
 
     const response = await eel.export_csv()();
     if (!response.success) {
@@ -224,7 +224,7 @@ export default class Header {
       return;
     }
 
-    const bom = "﻿";
+    const bom = "\uFEFF";
     const blob = new Blob([bom + response.csv], {
       type: "text/csv;charset=utf-8;",
     });
