@@ -638,7 +638,7 @@ export default class Table {
     const nextState =
       prevState === "true" || prevState === true ? false : true;
 
-    const response = await eel.set_folder_flag(folderId, flag, nextState)();
+    const response = await eel.set_folder_flag(Number(folderId), flag, nextState)();
     if (response.success) {
       event.setAttribute("data-flag-state", String(nextState));
       const flagBtn = event.querySelector("button");
