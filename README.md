@@ -1,3 +1,6 @@
+# 演示视频
+https://www.youtube.com/watch?v=WdBjitn4Dno
+
 # TeleFolders 功能差异报告
 
 **项目**: crazypeace/TeleFolders  
